@@ -53,6 +53,9 @@ function interleavedPositions(prevX: number[], spacing: number, count: number, s
  * "studio wall" — every vessel on one shared ground line: 2-3 of the
  * largest first, then each following cluster offset into the gaps of the
  * one before it, layering into a single dense, overlapping composition.
+ * The cluster is laid out in abstract (unit-less) space first, then scaled
+ * up as far as it can go without overflowing the available height or width
+ * — so it always fills the panel rather than sitting small in the middle.
  */
 export function renderOrganicLayout(ctx: LayoutCtx): HitBox[] {
   const { root, w, h, cps, adapt, cm, mR, variants: vs, selected } = ctx;
@@ -62,11 +65,35 @@ export function renderOrganicLayout(ctx: LayoutCtx): HitBox[] {
   const widthOf = (v: Variant) => Math.max(0.3, mR * 2 * v.w);
   const sorted = [...vs].sort((a, b) => b.h - a.h);
   const groups = groupByWidth(sorted, widthOf);
+  const spacing = (vs.reduce((sum, v) => sum + widthOf(v), 0) / vs.length) * 0.78;
 
+  const placed: { v: Variant; cx: number }[] = [];
+  let prevX: number[] = [];
+  groups.forEach((group, gi) => {
+    let xs: number[];
+    if (gi === 0) {
+      const totalW = group.length * spacing;
+      const start = -totalW / 2 + spacing / 2;
+      xs = group.map((_, i) => start + i * spacing + srnd(i * 7) * spacing * 0.08);
+    } else {
+      xs = interleavedPositions(prevX, spacing, group.length, gi * 97);
+    }
+    group.forEach((v, i) => placed.push({ v, cx: xs[i] }));
+    prevX = xs;
+  });
+
+  // Scale the whole (still unit-less) cluster to just fill the available
+  // height or width, whichever is the tighter fit, then center it.
   const maxH = Math.max(...vs.map((v) => v.h));
+  const left = Math.min(...placed.map((p) => p.cx - widthOf(p.v) / 2));
+  const right = Math.max(...placed.map((p) => p.cx + widthOf(p.v) / 2));
+  const spanX = Math.max(1e-6, right - left);
+  const midX = (left + right) / 2;
+
+  const marginTop = h * 0.1;
+  const marginX = w * 0.06;
   const base = h * 0.88;
-  const unit = Math.min((base - h * 0.1) / maxH, w / (vs.length * 1.15));
-  const spacing = (vs.reduce((sum, v) => sum + widthOf(v), 0) / vs.length) * unit * 0.78;
+  const unit = Math.min((base - marginTop) / maxH, (w - marginX * 2) / spanX);
 
   renderInkStroke(
     g,
@@ -78,22 +105,8 @@ export function renderOrganicLayout(ctx: LayoutCtx): HitBox[] {
     { width: 1.6, seed: 3, opacity: 0.45 },
   );
 
-  const placed: { v: Variant; cx: number }[] = [];
-  let prevX: number[] = [];
-  groups.forEach((group, gi) => {
-    let xs: number[];
-    if (gi === 0) {
-      const totalW = group.length * spacing;
-      const start = w / 2 - totalW / 2 + spacing / 2;
-      xs = group.map((_, i) => start + i * spacing + srnd(i * 7) * spacing * 0.08);
-    } else {
-      xs = interleavedPositions(prevX, spacing, group.length, gi * 97);
-    }
-    group.forEach((v, i) => placed.push({ v, cx: xs[i] }));
-    prevX = xs;
-  });
-
-  placed.forEach(({ v, cx }, i) => {
+  placed.forEach(({ v, cx: abstractCx }, i) => {
+    const cx = w / 2 + (abstractCx - midX) * unit;
     const rc = remapProfile(cps, v.w, v.h, adapt);
     const Hpx = unit * v.h;
     renderPot(g, rc, cx, base - Hpx, Hpx, { width: 2, seed: 31 + i * 19, opacity: 0.86, rim: true });
