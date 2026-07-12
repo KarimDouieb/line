@@ -74,7 +74,7 @@ export function FamilySidebar() {
       <div className="px-3">
         <Section title="LAYOUT" items={LAYOUTS} active={layout} onPick={setLayout} />
         <Section title="VESSEL SET" items={VESSEL_SETS} active={vesselSet} onPick={setVesselSet} />
-        <Section title="ADAPTATION" items={ADAPTATIONS} active={adapt} onPick={setAdapt} />
+        <Section title="VARIATION" items={ADAPTATIONS} active={adapt} onPick={setAdapt} />
       </div>
     </div>
   );
