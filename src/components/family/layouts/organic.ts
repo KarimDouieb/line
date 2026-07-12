@@ -1,4 +1,4 @@
-import { remapProfile, type Variant } from "@/lib/line-math";
+import { remapProfile, effectiveMaxRadius, type Variant } from "@/lib/line-math";
 import { computeClusterX } from "@/lib/cluster-layout";
 import { renderPot, renderInkStroke } from "@/lib/ink-style";
 import { labelIfSelected } from "./shared";
@@ -19,7 +19,8 @@ export function renderOrganicLayout(ctx: LayoutCtx): HitBox[] {
   const hits: HitBox[] = [];
   const g = root.append("g");
 
-  const widthOf = (v: Variant) => Math.max(0.3, mR * 2 * v.w);
+  const radiusOf = (v: Variant) => effectiveMaxRadius(mR, v, adapt);
+  const widthOf = (v: Variant) => Math.max(0.3, 2 * radiusOf(v));
   const placed = computeClusterX(vs, { widthOf, heightOf: (v) => v.h });
 
   // Scale the whole (still unit-less) cluster to just fill the available
@@ -50,8 +51,8 @@ export function renderOrganicLayout(ctx: LayoutCtx): HitBox[] {
     const rc = remapProfile(cps, v.w, v.h, adapt);
     const Hpx = unit * v.h;
     renderPot(g, rc, cx, base - Hpx, Hpx, { width: 2, seed: 31 + i * 19, opacity: 0.86, rim: true });
-    labelIfSelected(g, i, selected, v, cx, base, cm, mR, h);
-    hits.push({ x: cx - mR * v.w * unit, y: base - Hpx, w: mR * 2 * v.w * unit, h: Hpx });
+    labelIfSelected(g, { index: i, selected, variant: v, cx, baseY: base, cm, mR, containerH: h, mode: adapt });
+    hits.push({ x: cx - radiusOf(v) * unit, y: base - Hpx, w: 2 * radiusOf(v) * unit, h: Hpx });
   });
 
   return hits;

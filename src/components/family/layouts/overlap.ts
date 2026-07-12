@@ -1,4 +1,4 @@
-import { remapProfile, srnd } from "@/lib/line-math";
+import { remapProfile, srnd, effectiveMaxRadius } from "@/lib/line-math";
 import { renderPot, renderInkStroke } from "@/lib/ink-style";
 import { labelIfSelected } from "./shared";
 import type { HitBox, LayoutCtx } from "./types";
@@ -10,8 +10,9 @@ export function renderOverlapLayout(ctx: LayoutCtx): HitBox[] {
   const g = root.append("g");
 
   const ord = [...vs].sort((a, b) => b.h - a.h);
+  const radiusOf = (v: (typeof vs)[number]) => effectiveMaxRadius(mR, v, adapt);
   const maxH = Math.max(...ord.map((v) => v.h));
-  const widths = ord.map((v) => Math.max(0.3, mR * 2 * v.w));
+  const widths = ord.map((v) => Math.max(0.3, 2 * radiusOf(v)));
   const totalW = widths.reduce((s, x) => s + x, 0);
   const unit = Math.min((h - 76) / maxH, (w - 100) / (totalW * 0.74));
   const base = h - 40;
@@ -28,8 +29,8 @@ export function renderOverlapLayout(ctx: LayoutCtx): HitBox[] {
       opacity: 0.5 + 0.5 * (i / Math.max(1, ord.length - 1)),
       rim: true,
     });
-    labelIfSelected(g, i, selected, v, cx, base, cm, mR, h);
-    hits.push({ x: cx - mR * v.w * unit, y: base - Hpx, w: mR * 2 * v.w * unit, h: Hpx });
+    labelIfSelected(g, { index: i, selected, variant: v, cx, baseY: base, cm, mR, containerH: h, mode: adapt });
+    hits.push({ x: cx - radiusOf(v) * unit, y: base - Hpx, w: 2 * radiusOf(v) * unit, h: Hpx });
   });
 
   renderInkStroke(

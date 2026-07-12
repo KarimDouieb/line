@@ -151,6 +151,22 @@ export function maxRadius(cps: ControlPoint[]): number {
 }
 
 /**
+ * Clamps a "keep this fraction true-sized" ratio to a band around its
+ * baseline (a quarter to one-and-a-half times it) instead of only ever
+ * capping it at the baseline. A plain `Math.min(baseline, baseline / h)`
+ * is a no-op for every `h <= 1` (which is most variants in most vessel
+ * sets — `baseline / h >= baseline` whenever `h <= 1`, so the min always
+ * picks `baseline`), which is why neck/foot/ends used to look identical
+ * to "stretch all" for anything shorter than the original. The band still
+ * protects the opposite end (a very tall `h`) from shrinking the kept
+ * region to a razor-thin sliver.
+ */
+function clampKeep(baseline: number, h: number): number {
+  const raw = baseline / h;
+  return Math.min(baseline * 1.5, Math.max(baseline * 0.25, raw));
+}
+
+/**
  * Feature-preserving aspect remap: stretches a profile to target width/height
  * ratios `w`/`h` (relative to the original), while keeping the rim/foot
  * proportions recognizable per `mode` instead of naively squashing everything.
@@ -158,23 +174,46 @@ export function maxRadius(cps: ControlPoint[]): number {
 export function remapProfile(cps: ControlPoint[], w: number, h: number, mode: AdaptMode): ControlPoint[] {
   return cps.map((p) => {
     let y = p.y;
-    if (mode === "neck" && h !== 1) {
-      const keep = Math.min(0.3, 0.3 / h);
+    if (mode === "neck") {
+      const keep = clampKeep(0.3, h);
       y = p.y <= 0.3 ? p.y * (keep / 0.3) : keep + (p.y - 0.3) * ((1 - keep) / 0.7);
-    } else if (mode === "foot" && h !== 1) {
-      const keep = Math.min(0.22, 0.22 / h);
+    } else if (mode === "foot") {
+      const keep = clampKeep(0.22, h);
       y = p.y >= 0.78 ? 1 - (1 - p.y) * (keep / 0.22) : p.y * ((1 - keep) / 0.78);
-    } else if (mode === "ends" && h !== 1) {
-      const kt = Math.min(0.26, 0.26 / h);
-      const kb = Math.min(0.18, 0.18 / h);
+    } else if (mode === "ends") {
+      const kt = clampKeep(0.26, h);
+      const kb = clampKeep(0.18, h);
       if (p.y <= 0.26) y = p.y * (kt / 0.26);
       else if (p.y >= 0.82) y = 1 - (1 - p.y) * (kb / 0.18);
       else y = kt + (p.y - 0.26) * ((1 - kt - kb) / 0.56);
     }
-    let r = (p.r * w) / h;
-    if (mode === "weight") r = (p.r * w) / (h * Math.sqrt(h));
-    return { r, y };
+    const r = (p.r * w) / h;
+    return { r: mode === "weight" ? r * massFactor(h) : r, y };
   });
+}
+
+/**
+ * "weight" mode's extra width-follows-height multiplier, relative to plain
+ * `w/h` scaling — bounded so a very short variant (e.g. a plate) doesn't
+ * balloon past what the layouts allocate space for; see `effectiveMaxRadius`,
+ * which every layout uses to size/space vessels and must stay in lockstep
+ * with this factor.
+ */
+function massFactor(h: number): number {
+  return Math.min(1.8, Math.max(1 / 1.8, 1 / Math.sqrt(h)));
+}
+
+/**
+ * The actual max radius (as a fraction of height) a variant renders at once
+ * `remapProfile` gets done with it — `mR * v.w` alone is only correct when
+ * `v.h === 1`; every other variant also gets divided by `v.h` (and, in
+ * "weight" mode, further scaled by `massFactor`). Layouts must size and
+ * space vessels using this, not the raw `mR * v.w`, or the on-screen result
+ * drifts from — and can overflow — what was actually allocated for it.
+ */
+export function effectiveMaxRadius(mR: number, v: Variant, mode: AdaptMode): number {
+  const base = (mR * v.w) / v.h;
+  return mode === "weight" ? base * massFactor(v.h) : base;
 }
 
 export const PRESETS: Record<"bowl" | "cup" | "vase" | "bottle", ControlPoint[]> = {
@@ -261,9 +300,9 @@ export function resolveVariants(set: VesselSetName, mR: number): Variant[] {
   }))];
 }
 
-/** "18 × 32 cm"-style dimension label for a variant, given the base height and max radius. */
-export function computeDimensionsLabel(cm: number, mR: number, v: Variant): string {
-  return `${(cm * v.h).toFixed(0)} × ${(cm * mR * 2 * v.w).toFixed(0)} cm`;
+/** "18 × 32 cm"-style dimension label for a variant, given the base height, max radius, and adapt mode. */
+export function computeDimensionsLabel(cm: number, mR: number, v: Variant, mode: AdaptMode): string {
+  return `${(cm * v.h).toFixed(0)} × ${(cm * 2 * effectiveMaxRadius(mR, v, mode)).toFixed(0)} cm`;
 }
 
 /** Real-size (mm) SVG document for the profile at the given height — the actual export artifact. */

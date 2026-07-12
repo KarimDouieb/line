@@ -1,4 +1,4 @@
-import { remapProfile, computeDimensionsLabel } from "@/lib/line-math";
+import { remapProfile, computeDimensionsLabel, effectiveMaxRadius } from "@/lib/line-math";
 import { renderPot, renderInkStroke } from "@/lib/ink-style";
 import type { HitBox, LayoutCtx } from "./types";
 
@@ -8,11 +8,12 @@ export function renderShelfLayout(ctx: LayoutCtx): HitBox[] {
   const hits: HitBox[] = [];
   const g = root.append("g");
 
+  const widthOf = (v: (typeof vs)[number]) => Math.max(0.3, 2 * effectiveMaxRadius(mR, v, adapt));
   const maxH = Math.max(...vs.map((v) => v.h));
-  const totalUnits = vs.reduce((s, v) => s + Math.max(0.3, mR * 2 * v.w), 0);
+  const totalUnits = vs.reduce((s, v) => s + widthOf(v), 0);
   const unit = Math.min((h - 46) / maxH, w / (totalUnits * 1.15 + 0.5));
   const base = h - 26;
-  let x = (w - vs.reduce((s, v) => s + Math.max(0.3, mR * 2 * v.w) * unit * 1.15, 0)) / 2;
+  let x = (w - vs.reduce((s, v) => s + widthOf(v) * unit * 1.15, 0)) / 2;
 
   renderInkStroke(
     g,
@@ -27,7 +28,7 @@ export function renderShelfLayout(ctx: LayoutCtx): HitBox[] {
   vs.forEach((v, i) => {
     const rc = remapProfile(cps, v.w, v.h, adapt);
     const Hpx = unit * v.h;
-    const wpx = Math.max(0.3, mR * 2 * v.w) * unit * 1.15;
+    const wpx = widthOf(v) * unit * 1.15;
     const cx = x + wpx / 2;
     renderPot(g, rc, cx, base - Hpx, Hpx, {
       width: 2.4,
@@ -44,7 +45,7 @@ export function renderShelfLayout(ctx: LayoutCtx): HitBox[] {
         .attr("font-size", 10)
         .attr("font-family", "'Zen Kaku Gothic New', sans-serif")
         .attr("fill", "rgba(60,50,35,.7)")
-        .text(`${v.label} · ${computeDimensionsLabel(cm, mR, v)}`);
+        .text(`${v.label} · ${computeDimensionsLabel(cm, mR, v, adapt)}`);
     }
     hits.push({ x, y: base - Hpx - 10, w: wpx, h: Hpx + 20 });
     x += wpx;

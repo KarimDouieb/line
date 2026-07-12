@@ -306,6 +306,7 @@ export function SceneThree({ className }: { className?: string }) {
           heightCm,
           Math.max(0.2, maxRadius(controlPoints)),
           vesselsRef.current[selected].variant,
+          adapt,
         )}`
       : "";
 

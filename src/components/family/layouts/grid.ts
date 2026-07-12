@@ -1,4 +1,4 @@
-import { remapProfile, computeDimensionsLabel } from "@/lib/line-math";
+import { remapProfile, computeDimensionsLabel, effectiveMaxRadius } from "@/lib/line-math";
 import { renderPot } from "@/lib/ink-style";
 import type { HitBox, LayoutCtx } from "./types";
 
@@ -33,7 +33,7 @@ export function renderGridLayout(ctx: LayoutCtx): HitBox[] {
     const availH = ch - 40;
     const availW = cw - 26;
     let Hpx = availH * (v.h / maxH);
-    const halfW = mR * v.w * (Hpx / v.h);
+    const halfW = Hpx * effectiveMaxRadius(mR, v, adapt);
     if (halfW * 2 > availW) Hpx *= availW / (halfW * 2);
     const cx = x0 + cw / 2;
 
@@ -50,7 +50,7 @@ export function renderGridLayout(ctx: LayoutCtx): HitBox[] {
       .attr("font-size", 9.5)
       .attr("font-family", "'Zen Kaku Gothic New', sans-serif")
       .attr("fill", "rgba(60,50,35,.55)")
-      .text(`${v.label} · ${computeDimensionsLabel(cm, mR, v)}`);
+      .text(`${v.label} · ${computeDimensionsLabel(cm, mR, v, adapt)}`);
 
     hits.push({ x: x0, y: y0, w: cw, h: ch });
   });
