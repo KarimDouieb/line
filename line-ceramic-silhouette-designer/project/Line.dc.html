@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#eae4d6;font-family:'Zen Kaku Gothic New',system-ui,sans-serif}
+a{color:#8a5a44}a:hover{color:#b4432e}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 8px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#2a251d;color:#f4efe3;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 14px/1.2 'Shippori Mincho',serif;color:#2a251d}
+.dv-intro{max-width:920px;font:400 12px/1.6 'Zen Kaku Gothic New',sans-serif;color:rgba(42,37,29,.72);margin:0 0 24px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(42,37,29,.1);color:#2a251d;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11.5px/1.3 'Zen Kaku Gothic New',sans-serif;color:rgba(42,37,29,.6)}
+.dv-card{max-width:100%;background:#fff;border:1px solid rgba(42,37,29,.14);border-radius:6px;box-shadow:0 2px 10px rgba(60,40,20,.09);overflow:hidden}
+.dv-opt:target .dv-oid{background:#b4432e;color:#fff}
+.dv-next{margin:26px 0 0;font:12px/1.5 'Zen Kaku Gothic New',sans-serif;color:rgba(42,37,29,.55)}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Line 線 — three studies of the silhouette editor</span></div>
+  <p class="dv-intro">Working core: draw one side of a form freehand (finger / stylus / mouse) — the stroke is fitted to an editable curve, mirrored across the axis, and a family of aspect-ratio variations is generated live. Drag points to refine, tap the line to add a point, double-tap a point to remove it. Heights are in real cm. SVG export works for real; PDF at scale, turning ribs for 3D print, and DXF are on the menus as planned items so they aren't forgotten — same for photo→line input. The three studies vary layout, ink weight, handle style, and how the family is presented.</p>
+  <div class="dv-opts">
+
+    <!-- ================= 1a SUMI ================= -->
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Sumi — full-bleed canvas, floating tools, family as a shelf · heavy brush</div>
+      <div class="dv-card" style="width:1160px;height:700px;position:relative;background-color:#f7f2e7;background-image:url('data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%22280%22%20height=%22280%22%3E%3Cfilter%20id=%22n%22%3E%3CfeTurbulence%20type=%22fractalNoise%22%20baseFrequency=%220.75%22%20numOctaves=%222%22%20seed=%227%22/%3E%3CfeColorMatrix%20values=%220%200%200%200%200.32%200%200%200%200%200.27%200%200%200%200%200.18%200%200%200%200.06%200%22/%3E%3C/filter%3E%3Crect%20width=%22280%22%20height=%22280%22%20filter=%22url(%23n)%22/%3E%3C/svg%3E')">
+
+        <x-import component-from-global-scope="ink-canvas" from="./ink-engine.js" data-option-id="a" data-texture="1.8" data-handles="dot" data-preset="vase" hint-size="100%,100%" style="position:absolute;inset:0;z-index:1"></x-import>
+
+        <div style="position:absolute;top:24px;left:30px;z-index:5;pointer-events:none;display:flex;align-items:baseline;gap:12px">
+          <div style="font:500 30px 'Shippori Mincho',serif;color:#2a251d">Line</div>
+          <div style="font:400 11px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.14em;color:rgba(42,37,29,.55)">STUDY Nº 1 · SUMI</div>
+          <div style="width:7px;height:7px;border-radius:50%;background:#b4432e;align-self:center"></div>
+        </div>
+
+        <sc-if value="{{ a.anyMenu }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;z-index:20" onClick="{{ a.closeMenus }}"></div>
+        </sc-if>
+
+        <div style="position:absolute;top:26px;right:28px;z-index:21;display:flex;gap:8px">
+          <div onClick="{{ a.toggleInput }}" style="font:500 11.5px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.05em;color:#3d362b;padding:8px 14px;border-radius:999px;border:1px solid rgba(60,50,35,.18);background:rgba(250,246,236,.85);cursor:pointer;user-select:none" style-hover="background:rgba(60,50,35,.08)">input · freehand ▾</div>
+          <div onClick="{{ a.toggleExport }}" style="font:500 11.5px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.05em;color:#3d362b;padding:8px 14px;border-radius:999px;border:1px solid rgba(60,50,35,.18);background:rgba(250,246,236,.85);cursor:pointer;user-select:none" style-hover="background:rgba(60,50,35,.08)">export ▾</div>
+        </div>
+
+        <sc-if value="{{ a.inputOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;top:66px;right:120px;z-index:22;width:224px;background:#fbf7ee;border:1px solid rgba(60,50,35,.18);border-radius:10px;box-shadow:0 10px 28px rgba(60,40,20,.16);padding:6px 0;font:400 12px 'Zen Kaku Gothic New',sans-serif;color:#3d362b">
+            <div style="padding:9px 16px 7px;display:flex;justify-content:space-between;align-items:baseline"><span>freehand stroke</span><span style="color:#b4432e;font-size:10px">active</span></div>
+            <div style="padding:7px 16px 3px;font-size:10px;letter-spacing:.1em;color:rgba(60,50,35,.5)">TEMPLATE CURVE</div>
+            <div style="display:flex;gap:4px;padding:2px 12px 8px">
+              <div onClick="{{ a.tpl.bowl }}" style="padding:5px 9px;border:1px solid rgba(60,50,35,.2);border-radius:999px;cursor:pointer" style-hover="background:rgba(60,50,35,.08)">bowl</div>
+              <div onClick="{{ a.tpl.cup }}" style="padding:5px 9px;border:1px solid rgba(60,50,35,.2);border-radius:999px;cursor:pointer" style-hover="background:rgba(60,50,35,.08)">cup</div>
+              <div onClick="{{ a.tpl.vase }}" style="padding:5px 9px;border:1px solid rgba(60,50,35,.2);border-radius:999px;cursor:pointer" style-hover="background:rgba(60,50,35,.08)">vase</div>
+              <div onClick="{{ a.tpl.bottle }}" style="padding:5px 9px;border:1px solid rgba(60,50,35,.2);border-radius:999px;cursor:pointer" style-hover="background:rgba(60,50,35,.08)">bottle</div>
+            </div>
+            <div style="border-top:1px solid rgba(60,50,35,.12);margin:2px 0"></div>
+            <div onClick="{{ a.photoSoon }}" style="padding:9px 16px;display:flex;justify-content:space-between;align-items:baseline;color:rgba(60,50,35,.45);cursor:pointer"><span>photo → line</span><span style="font-size:10px;border:1px solid rgba(60,50,35,.25);border-radius:999px;padding:1px 7px">soon</span></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ a.exportOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;top:66px;right:28px;z-index:22;width:238px;background:#fbf7ee;border:1px solid rgba(60,50,35,.18);border-radius:10px;box-shadow:0 10px 28px rgba(60,40,20,.16);padding:6px 0;font:400 12px 'Zen Kaku Gothic New',sans-serif;color:#3d362b">
+            <div onClick="{{ a.exportSVG }}" style="padding:9px 16px;cursor:pointer" style-hover="background:rgba(60,50,35,.07)">SVG profile · real size</div>
+            <div onClick="{{ a.exportPDF }}" style="padding:9px 16px;display:flex;justify-content:space-between;color:rgba(60,50,35,.45);cursor:pointer"><span>PDF at scale</span><span style="font-size:10px;border:1px solid rgba(60,50,35,.25);border-radius:999px;padding:1px 7px">soon</span></div>
+            <div onClick="{{ a.exportRibs }}" style="padding:9px 16px;display:flex;justify-content:space-between;color:rgba(60,50,35,.45);cursor:pointer"><span>turning ribs · 3D print</span><span style="font-size:10px;border:1px solid rgba(60,50,35,.25);border-radius:999px;padding:1px 7px">planned</span></div>
+            <div onClick="{{ a.exportDXF }}" style="padding:9px 16px;display:flex;justify-content:space-between;color:rgba(60,50,35,.45);cursor:pointer"><span>DXF · CAD</span><span style="font-size:10px;border:1px solid rgba(60,50,35,.25);border-radius:999px;padding:1px 7px">soon</span></div>
+          </div>
+        </sc-if>
+
+        <div style="position:absolute;left:0;right:0;bottom:0;height:196px;z-index:10;transform:translateY({{ a.famY }});transition:transform .45s cubic-bezier(.2,.8,.2,1);background:linear-gradient(rgba(247,242,231,0),rgba(247,242,231,.94) 30%)">
+          <x-import component-from-global-scope="family-board" from="./ink-engine.js" data-option-id="a" data-layout="shelf" data-texture="1.6" hint-size="100%,196px" style="position:absolute;inset:0"></x-import>
+        </div>
+
+        <div style="position:absolute;left:50%;bottom:210px;transform:translateX(-50%);z-index:12;display:flex;align-items:center;gap:4px;background:rgba(250,246,236,.9);border:1px solid rgba(60,50,35,.16);border-radius:999px;padding:4px 8px;box-shadow:0 4px 16px rgba(60,40,20,.1)">
+          <div onClick="{{ a.newLine }}" style="font:500 11.5px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.05em;color:#3d362b;padding:7px 13px;border-radius:999px;cursor:pointer;user-select:none" style-hover="background:rgba(60,50,35,.08)">new line</div>
+          <div onClick="{{ a.undo }}" style="font:500 11.5px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.05em;color:#3d362b;padding:7px 13px;border-radius:999px;cursor:pointer;user-select:none" style-hover="background:rgba(60,50,35,.08)">undo</div>
+          <div style="width:1px;height:16px;background:rgba(60,50,35,.18)"></div>
+          <div style="display:flex;align-items:center;gap:5px;padding:0 8px">
+            <input type="number" value="{{ a.height }}" onChange="{{ a.setHeight }}" style="width:42px;border:none;border-bottom:1px solid rgba(60,50,35,.3);background:transparent;font:500 12px 'Zen Kaku Gothic New',sans-serif;text-align:center;color:#3d362b;outline:none">
+            <span style="font:400 11px 'Zen Kaku Gothic New',sans-serif;color:rgba(60,50,35,.55)">cm</span>
+          </div>
+          <div style="width:1px;height:16px;background:rgba(60,50,35,.18)"></div>
+          <div onClick="{{ a.toggleFam }}" style="font:500 11.5px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.05em;color:#3d362b;padding:7px 13px;border-radius:999px;cursor:pointer;user-select:none;border-bottom:2px solid {{ a.famCol }}" style-hover="background:rgba(60,50,35,.08)">family</div>
+        </div>
+
+        <div style="position:absolute;left:30px;bottom:12px;z-index:5;pointer-events:none;font:400 10.5px 'Zen Kaku Gothic New',sans-serif;color:rgba(60,50,35,.45)">tap the line to add a point · double-tap a point to remove · drag to shape</div>
+
+        <sc-if value="{{ a.toast }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:50%;bottom:270px;transform:translateX(-50%);z-index:30;background:#2a251d;color:#f4efe3;font:400 11.5px 'Zen Kaku Gothic New',sans-serif;padding:8px 18px;border-radius:999px;opacity:.95;pointer-events:none">{{ a.toast }}</div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- ================= 1b ATELIER ================= -->
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Atelier — tool rail + pinned family panel, aspect grid · fine liner</div>
+      <div class="dv-card" style="width:1160px;height:700px;position:relative;display:grid;grid-template-columns:76px 1fr 336px;background-color:#f7f2e7;background-image:url('data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%22280%22%20height=%22280%22%3E%3Cfilter%20id=%22n%22%3E%3CfeTurbulence%20type=%22fractalNoise%22%20baseFrequency=%220.75%22%20numOctaves=%222%22%20seed=%227%22/%3E%3CfeColorMatrix%20values=%220%200%200%200%200.32%200%200%200%200%200.27%200%200%200%200%200.18%200%200%200%200.06%200%22/%3E%3C/filter%3E%3Crect%20width=%22280%22%20height=%22280%22%20filter=%22url(%23n)%22/%3E%3C/svg%3E')">
+
+        <div style="border-right:1px solid rgba(60,50,35,.14);display:flex;flex-direction:column;align-items:center;padding:20px 0;gap:18px;z-index:6">
+          <div style="font:500 22px 'Shippori Mincho',serif;color:#2a251d;margin-bottom:6px">線</div>
+          <div onClick="{{ b.newLine }}" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;user-select:none;color:#3d362b" style-hover="color:#b4432e">
+            <div style="width:40px;height:40px;border:1px solid rgba(60,50,35,.25);border-radius:50%;display:grid;place-items:center;font-size:16px">＋</div>
+            <div style="font:500 9px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.08em">NEW</div>
+          </div>
+          <div onClick="{{ b.undo }}" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;user-select:none;color:#3d362b" style-hover="color:#b4432e">
+            <div style="width:40px;height:40px;border:1px solid rgba(60,50,35,.25);border-radius:50%;display:grid;place-items:center;font-size:15px">↺</div>
+            <div style="font:500 9px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.08em">UNDO</div>
+          </div>
+          <div onClick="{{ b.toggleTpl }}" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;user-select:none;color:#3d362b" style-hover="color:#b4432e">
+            <div style="width:40px;height:40px;border:1px solid rgba(60,50,35,.25);border-radius:50%;display:grid;place-items:center;font-size:15px">◠</div>
+            <div style="font:500 9px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.08em">FORMS</div>
+          </div>
+          <div onClick="{{ b.photoSoon }}" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;user-select:none;color:rgba(60,50,35,.38)">
+            <div style="width:40px;height:40px;border:1px dashed rgba(60,50,35,.3);border-radius:50%;display:grid;place-items:center;font-size:13px">▦</div>
+            <div style="font:500 9px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.08em">PHOTO</div>
+          </div>
+          <div style="flex:1"></div>
+          <div onClick="{{ b.exportSVG }}" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;user-select:none;color:#3d362b" style-hover="color:#b4432e">
+            <div style="width:40px;height:40px;border:1px solid rgba(60,50,35,.25);border-radius:50%;display:grid;place-items:center;font-size:15px">↓</div>
+            <div style="font:500 9px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.08em">SVG</div>
+          </div>
+        </div>
+
+        <div style="position:relative">
+          <x-import component-from-global-scope="ink-canvas" from="./ink-engine.js" data-option-id="b" data-texture="0.5" data-handles="ring" data-preset="bowl" hint-size="100%,100%" style="position:absolute;inset:0"></x-import>
+          <div style="position:absolute;top:20px;left:24px;pointer-events:none;font:400 11px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.12em;color:rgba(42,37,29,.5)">LINE · ATELIER</div>
+          <div style="position:absolute;left:24px;bottom:12px;pointer-events:none;font:400 10.5px 'Zen Kaku Gothic New',sans-serif;color:rgba(60,50,35,.45)">tap line to add · double-tap point to remove</div>
+          <sc-if value="{{ b.tplOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;top:70px;left:14px;z-index:30;width:190px;background:#fbf7ee;border:1px solid rgba(60,50,35,.18);border-radius:10px;box-shadow:0 10px 28px rgba(60,40,20,.16);padding:6px 0;font:400 12px 'Zen Kaku Gothic New',sans-serif;color:#3d362b">
+              <div onClick="{{ b.tpl.bowl }}" style="padding:8px 16px;cursor:pointer" style-hover="background:rgba(60,50,35,.07)">bowl</div>
+              <div onClick="{{ b.tpl.cup }}" style="padding:8px 16px;cursor:pointer" style-hover="background:rgba(60,50,35,.07)">cup</div>
+              <div onClick="{{ b.tpl.vase }}" style="padding:8px 16px;cursor:pointer" style-hover="background:rgba(60,50,35,.07)">vase</div>
+              <div onClick="{{ b.tpl.bottle }}" style="padding:8px 16px;cursor:pointer" style-hover="background:rgba(60,50,35,.07)">bottle</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ b.toast }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:50%;bottom:40px;transform:translateX(-50%);z-index:30;background:#2a251d;color:#f4efe3;font:400 11.5px 'Zen Kaku Gothic New',sans-serif;padding:8px 18px;border-radius:999px;opacity:.95;pointer-events:none">{{ b.toast }}</div>
+          </sc-if>
+        </div>
+
+        <div style="border-left:1px solid rgba(60,50,35,.14);display:flex;flex-direction:column;padding:22px 22px 16px;gap:12px">
+          <div>
+            <div style="font:500 19px 'Shippori Mincho',serif;color:#2a251d">family</div>
+            <div style="font:400 10.5px 'Zen Kaku Gothic New',sans-serif;color:rgba(42,37,29,.55);margin-top:2px">nine studies of one line · tap to compare</div>
+          </div>
+          <div style="display:flex;gap:2px;border-bottom:1px solid rgba(60,50,35,.12)">
+            <div onClick="{{ b.setAdaptU }}" style="font:500 10.5px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.05em;color:#3d362b;padding:6px 10px;cursor:pointer;user-select:none;border-bottom:2px solid {{ b.adaptUCol }}" style-hover="color:#b4432e">stretch all</div>
+            <div onClick="{{ b.setAdaptN }}" style="font:500 10.5px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.05em;color:#3d362b;padding:6px 10px;cursor:pointer;user-select:none;border-bottom:2px solid {{ b.adaptNCol }}" style-hover="color:#b4432e">keep neck</div>
+            <div onClick="{{ b.setAdaptF }}" style="font:500 10.5px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.05em;color:#3d362b;padding:6px 10px;cursor:pointer;user-select:none;border-bottom:2px solid {{ b.adaptFCol }}" style-hover="color:#b4432e">keep foot</div>
+          </div>
+          <div style="flex:1;min-height:0">
+            <x-import component-from-global-scope="family-board" from="./ink-engine.js" data-option-id="b" data-layout="grid" data-texture="0.5" hint-size="100%,100%" style="width:100%;height:100%"></x-import>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(60,50,35,.12);padding-top:12px">
+            <div style="font:500 11px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.08em;color:rgba(42,37,29,.6)">HEIGHT</div>
+            <div style="display:flex;align-items:center;gap:5px">
+              <input type="number" value="{{ b.height }}" onChange="{{ b.setHeight }}" style="width:46px;border:none;border-bottom:1px solid rgba(60,50,35,.3);background:transparent;font:500 12px 'Zen Kaku Gothic New',sans-serif;text-align:center;color:#3d362b;outline:none">
+              <span style="font:400 11px 'Zen Kaku Gothic New',sans-serif;color:rgba(60,50,35,.55)">cm</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 1c KAKEJIKU ================= -->
+    <div class="dv-opt" id="1c">
+      <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Kakejiku — tabbed flow (draw → family → export), revolve preview, family as one composition</div>
+      <div class="dv-card" style="width:1160px;height:700px;position:relative;background-color:#f7f2e7;background-image:url('data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%22280%22%20height=%22280%22%3E%3Cfilter%20id=%22n%22%3E%3CfeTurbulence%20type=%22fractalNoise%22%20baseFrequency=%220.75%22%20numOctaves=%222%22%20seed=%227%22/%3E%3CfeColorMatrix%20values=%220%200%200%200%200.32%200%200%200%200%200.27%200%200%200%200%200.18%200%200%200%200.06%200%22/%3E%3C/filter%3E%3Crect%20width=%22280%22%20height=%22280%22%20filter=%22url(%23n)%22/%3E%3C/svg%3E')">
+
+        <div style="position:absolute;top:0;left:0;right:0;height:56px;display:flex;align-items:center;padding:0 24px;border-bottom:1px solid rgba(60,50,35,.14);z-index:10">
+          <div style="display:flex;align-items:center;gap:9px;width:220px">
+            <div style="font:500 21px 'Shippori Mincho',serif;color:#2a251d">Line</div>
+            <div style="width:6px;height:6px;border-radius:50%;background:#b4432e"></div>
+          </div>
+          <div style="flex:1;display:flex;justify-content:center;gap:6px">
+            <div onClick="{{ c.goDraw }}" style="font:500 12px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.08em;color:#3d362b;padding:17px 14px 15px;cursor:pointer;user-select:none;border-bottom:2px solid {{ c.colDraw }}" style-hover="color:#b4432e">draw</div>
+            <div onClick="{{ c.goFam }}" style="font:500 12px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.08em;color:#3d362b;padding:17px 14px 15px;cursor:pointer;user-select:none;border-bottom:2px solid {{ c.colFam }}" style-hover="color:#b4432e">family</div>
+            <div onClick="{{ c.goExp }}" style="font:500 12px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.08em;color:#3d362b;padding:17px 14px 15px;cursor:pointer;user-select:none;border-bottom:2px solid {{ c.colExp }}" style-hover="color:#b4432e">export</div>
+          </div>
+          <div style="width:220px;display:flex;justify-content:flex-end;align-items:center;gap:5px">
+            <input type="number" value="{{ c.height }}" onChange="{{ c.setHeight }}" style="width:44px;border:none;border-bottom:1px solid rgba(60,50,35,.3);background:transparent;font:500 12px 'Zen Kaku Gothic New',sans-serif;text-align:center;color:#3d362b;outline:none">
+            <span style="font:400 11px 'Zen Kaku Gothic New',sans-serif;color:rgba(60,50,35,.55)">cm</span>
+          </div>
+        </div>
+
+        <div style="position:absolute;top:56px;left:0;right:0;bottom:0;display:{{ c.tabDraw }}">
+          <x-import component-from-global-scope="ink-canvas" from="./ink-engine.js" data-option-id="c" data-texture="1.1" data-handles="seal" data-preset="bottle" hint-size="100%,100%" style="position:absolute;inset:0"></x-import>
+          <div style="position:absolute;left:24px;top:16px;display:flex;gap:8px;z-index:5">
+            <div onClick="{{ c.newLine }}" style="font:500 11.5px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.05em;color:#3d362b;padding:7px 13px;border-radius:999px;border:1px solid rgba(60,50,35,.2);background:rgba(250,246,236,.85);cursor:pointer;user-select:none" style-hover="background:rgba(60,50,35,.08)">new line</div>
+            <div onClick="{{ c.undo }}" style="font:500 11.5px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.05em;color:#3d362b;padding:7px 13px;border-radius:999px;border:1px solid rgba(60,50,35,.2);background:rgba(250,246,236,.85);cursor:pointer;user-select:none" style-hover="background:rgba(60,50,35,.08)">undo</div>
+          </div>
+          <div style="position:absolute;right:26px;bottom:24px;width:232px;height:268px;border:1px solid rgba(60,50,35,.18);border-radius:6px;background:rgba(250,246,236,.78);z-index:5;display:flex;flex-direction:column">
+            <div style="font:400 10px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.12em;color:rgba(42,37,29,.55);padding:10px 12px 0">REVOLVE · DRAG TO TURN</div>
+            <div style="flex:1;min-height:0">
+              <x-import component-from-global-scope="revolve-preview" from="./ink-engine.js" data-option-id="c" hint-size="100%,100%" style="width:100%;height:100%"></x-import>
+            </div>
+          </div>
+          <div style="position:absolute;left:24px;bottom:12px;pointer-events:none;font:400 10.5px 'Zen Kaku Gothic New',sans-serif;color:rgba(60,50,35,.45)">tap line to add a point · double-tap to remove</div>
+        </div>
+
+        <div style="position:absolute;top:56px;left:0;right:0;bottom:0;display:{{ c.tabFam }}">
+          <div style="position:absolute;top:16px;left:0;right:0;display:flex;justify-content:center;gap:2px;z-index:5">
+            <div onClick="{{ c.setAdaptU }}" style="font:500 10.5px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.05em;color:#3d362b;padding:6px 12px;cursor:pointer;user-select:none;border-bottom:2px solid {{ c.adaptUCol }}" style-hover="color:#b4432e">stretch all</div>
+            <div onClick="{{ c.setAdaptN }}" style="font:500 10.5px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.05em;color:#3d362b;padding:6px 12px;cursor:pointer;user-select:none;border-bottom:2px solid {{ c.adaptNCol }}" style-hover="color:#b4432e">keep neck</div>
+            <div onClick="{{ c.setAdaptF }}" style="font:500 10.5px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.05em;color:#3d362b;padding:6px 12px;cursor:pointer;user-select:none;border-bottom:2px solid {{ c.adaptFCol }}" style-hover="color:#b4432e">keep foot</div>
+          </div>
+          <x-import component-from-global-scope="family-board" from="./ink-engine.js" data-option-id="c" data-layout="overlap" data-texture="1.1" hint-size="100%,100%" style="position:absolute;inset:48px 40px 20px"></x-import>
+        </div>
+
+        <div style="position:absolute;top:56px;left:0;right:0;bottom:0;display:{{ c.tabExp }}">
+          <div style="max-width:560px;margin:60px auto 0;padding:0 20px">
+            <div style="font:500 22px 'Shippori Mincho',serif;color:#2a251d">export</div>
+            <div style="font:400 11.5px 'Zen Kaku Gothic New',sans-serif;color:rgba(42,37,29,.55);margin:4px 0 22px">everything leaves at real size — height set to {{ c.height }} cm</div>
+            <div onClick="{{ c.exportSVG }}" style="display:flex;justify-content:space-between;align-items:center;padding:16px 4px;border-top:1px solid rgba(60,50,35,.14);cursor:pointer" style-hover="background:rgba(60,50,35,.04)">
+              <div><div style="font:500 14px 'Shippori Mincho',serif;color:#2a251d">SVG profile</div><div style="font:400 11px 'Zen Kaku Gothic New',sans-serif;color:rgba(42,37,29,.5);margin-top:2px">outline in mm — for templates &amp; ribs</div></div>
+              <div style="font:500 11px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.06em;color:#f4efe3;background:#2a251d;padding:7px 16px;border-radius:999px">download</div>
+            </div>
+            <div onClick="{{ c.exportPDF }}" style="display:flex;justify-content:space-between;align-items:center;padding:16px 4px;border-top:1px solid rgba(60,50,35,.14);cursor:pointer" style-hover="background:rgba(60,50,35,.04)">
+              <div><div style="font:500 14px 'Shippori Mincho',serif;color:rgba(42,37,29,.55)">PDF at real scale</div><div style="font:400 11px 'Zen Kaku Gothic New',sans-serif;color:rgba(42,37,29,.45);margin-top:2px">print, cut, hold against the wheel</div></div>
+              <div style="font:500 10px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.06em;color:rgba(42,37,29,.5);border:1px solid rgba(60,50,35,.25);padding:5px 12px;border-radius:999px">soon</div>
+            </div>
+            <div onClick="{{ c.exportRibs }}" style="display:flex;justify-content:space-between;align-items:center;padding:16px 4px;border-top:1px solid rgba(60,50,35,.14);cursor:pointer" style-hover="background:rgba(60,50,35,.04)">
+              <div><div style="font:500 14px 'Shippori Mincho',serif;color:rgba(42,37,29,.55)">Turning ribs · 3D print</div><div style="font:400 11px 'Zen Kaku Gothic New',sans-serif;color:rgba(42,37,29,.45);margin-top:2px">printable ribs that carry this exact curve</div></div>
+              <div style="font:500 10px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.06em;color:#b4432e;border:1px solid rgba(180,67,46,.4);padding:5px 12px;border-radius:999px">planned</div>
+            </div>
+            <div onClick="{{ c.exportDXF }}" style="display:flex;justify-content:space-between;align-items:center;padding:16px 4px;border-top:1px solid rgba(60,50,35,.14);border-bottom:1px solid rgba(60,50,35,.14);cursor:pointer" style-hover="background:rgba(60,50,35,.04)">
+              <div><div style="font:500 14px 'Shippori Mincho',serif;color:rgba(42,37,29,.55)">DXF · CAD</div><div style="font:400 11px 'Zen Kaku Gothic New',sans-serif;color:rgba(42,37,29,.45);margin-top:2px">for laser cutting &amp; CAD refinement</div></div>
+              <div style="font:500 10px 'Zen Kaku Gothic New',sans-serif;letter-spacing:.06em;color:rgba(42,37,29,.5);border:1px solid rgba(60,50,35,.25);padding:5px 12px;border-radius:999px">soon</div>
+            </div>
+          </div>
+        </div>
+
+        <sc-if value="{{ c.toast }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:50%;bottom:34px;transform:translateX(-50%);z-index:30;background:#2a251d;color:#f4efe3;font:400 11.5px 'Zen Kaku Gothic New',sans-serif;padding:8px 18px;border-radius:999px;opacity:.95;pointer-events:none">{{ c.toast }}</div>
+        </sc-if>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "make <a class="dv-oid" href="#1a">1a</a> the base but with the aspect grid from <a class="dv-oid" href="#1b">1b</a>" · "gallery screen for saved lines" · "push the ink texture further / calmer"</p>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      a: { inputOpen: false, exportOpen: false, fam: true, toast: '', height: 18, adapt: 'uniform' },
+      b: { tpl: false, toast: '', height: 14, adapt: 'uniform' },
+      c: { tab: 'draw', toast: '', height: 24, adapt: 'uniform' }
+    };
+    this.timers = {};
+  }
+  componentDidMount() {
+    const wire = () => {
+      if (!window.LineApp) { setTimeout(wire, 120); return; }
+      ['a', 'b', 'c'].forEach(id => {
+        window.LineApp.setMeta(id, 'height', this.state[id].height);
+        window.LineApp.setMeta(id, 'adapt', this.state[id].adapt);
+      });
+    };
+    wire();
+  }
+  set(id, patch) { this.setState(s => { const o = {}; o[id] = Object.assign({}, s[id], patch); return o; }); }
+  toast(id, msg) {
+    this.set(id, { toast: msg });
+    clearTimeout(this.timers[id]);
+    this.timers[id] = setTimeout(() => this.set(id, { toast: '' }), 2300);
+  }
+  cmd(id, c, a) { if (window.LineApp) window.LineApp.command(id, c, a); }
+  setAdapt(id, v) { this.set(id, { adapt: v }); if (window.LineApp) window.LineApp.setMeta(id, 'adapt', v); }
+  mk(id) {
+    const st = this.state[id];
+    const tpl = {};
+    ['bowl', 'cup', 'vase', 'bottle'].forEach(n => {
+      tpl[n] = () => { this.cmd(id, 'template', n); this.set(id, { inputOpen: false, tpl: false }); this.toast(id, n + ' loaded — drag the points'); };
+    });
+    return {
+      toast: st.toast,
+      height: st.height,
+      setHeight: (e) => {
+        const v = e.target.value;
+        this.set(id, { height: v });
+        const n = parseFloat(v);
+        if (n >= 3 && n <= 90 && window.LineApp) window.LineApp.setMeta(id, 'height', n);
+      },
+      newLine: () => { this.cmd(id, 'clear'); this.set(id, { inputOpen: false }); },
+      undo: () => this.cmd(id, 'undo'),
+      tpl: tpl,
+      photoSoon: () => { this.toast(id, 'photo → line — planned for a later study'); this.set(id, { inputOpen: false, tpl: false }); },
+      exportSVG: () => {
+        const ok = window.LineApp && window.LineApp.exportSVG(id);
+        this.toast(id, ok ? 'SVG profile saved — real size, mm' : 'draw a line first');
+        this.set(id, { exportOpen: false });
+      },
+      exportPDF: () => { this.toast(id, 'PDF at real scale — coming soon'); this.set(id, { exportOpen: false }); },
+      exportRibs: () => { this.toast(id, 'turning ribs for 3D print — on the roadmap'); this.set(id, { exportOpen: false }); },
+      exportDXF: () => { this.toast(id, 'DXF for CAD — coming soon'); this.set(id, { exportOpen: false }); },
+      setAdaptU: () => this.setAdapt(id, 'uniform'),
+      setAdaptN: () => this.setAdapt(id, 'neck'),
+      setAdaptF: () => this.setAdapt(id, 'foot'),
+      adaptUCol: st.adapt === 'uniform' ? '#b4432e' : 'transparent',
+      adaptNCol: st.adapt === 'neck' ? '#b4432e' : 'transparent',
+      adaptFCol: st.adapt === 'foot' ? '#b4432e' : 'transparent'
+    };
+  }
+  renderVals() {
+    const a = this.mk('a'), b = this.mk('b'), c = this.mk('c');
+    const sa = this.state.a, sb = this.state.b, sc = this.state.c;
+    a.inputOpen = sa.inputOpen;
+    a.exportOpen = sa.exportOpen;
+    a.anyMenu = sa.inputOpen || sa.exportOpen;
+    a.toggleInput = () => this.set('a', { inputOpen: !sa.inputOpen, exportOpen: false });
+    a.toggleExport = () => this.set('a', { exportOpen: !sa.exportOpen, inputOpen: false });
+    a.closeMenus = () => this.set('a', { inputOpen: false, exportOpen: false });
+    a.famY = sa.fam ? '0%' : '112%';
+    a.famCol = sa.fam ? '#b4432e' : 'transparent';
+    a.toggleFam = () => this.set('a', { fam: !sa.fam });
+    b.tplOpen = sb.tpl;
+    b.toggleTpl = () => this.set('b', { tpl: !sb.tpl });
+    c.tabDraw = sc.tab === 'draw' ? 'block' : 'none';
+    c.tabFam = sc.tab === 'family' ? 'block' : 'none';
+    c.tabExp = sc.tab === 'export' ? 'block' : 'none';
+    c.colDraw = sc.tab === 'draw' ? '#b4432e' : 'transparent';
+    c.colFam = sc.tab === 'family' ? '#b4432e' : 'transparent';
+    c.colExp = sc.tab === 'export' ? '#b4432e' : 'transparent';
+    c.goDraw = () => this.set('c', { tab: 'draw' });
+    c.goFam = () => this.set('c', { tab: 'family' });
+    c.goExp = () => this.set('c', { tab: 'export' });
+    return { a: a, b: b, c: c };
+  }
+}
+
+</script>
+</body>
+</html>
