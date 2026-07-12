@@ -24,14 +24,3 @@ export function labelIfSelected(
     .attr("fill", "rgba(60,50,35,.72)")
     .text(`${variant.label} · ${computeDimensionsLabel(cm, mR, variant)}`);
 }
-
-/** Stable back/front row split used by the organic and scene layouts: tallest vessels alternate
- *  into a farther "back" row and a nearer "front" row, front kept in visual (mirrored) order. */
-export function splitIntoRows<T extends { h: number }>(variants: T[]): { back: T[]; front: T[] } {
-  const ord = [...variants].sort((a, b) => b.h - a.h);
-  const back: T[] = [];
-  const front: T[] = [];
-  ord.forEach((v, i) => (i % 2 ? front : back).push(v));
-  front.reverse();
-  return { back, front };
-}

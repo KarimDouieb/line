@@ -10,7 +10,6 @@ import { line as d3Line, curveCatmullRom, type Selection } from "d3";
 import { catmullRom, srnd, type ControlPoint } from "@/lib/line-math";
 
 export const INK = "#262219";
-export const CLAY_TONES = ["#b5a28b", "#a28b70", "#c4b59d", "#93805f", "#ab967c", "#bfae94", "#8c7a64"];
 
 export type Point = { x: number; y: number };
 
@@ -111,34 +110,4 @@ export function renderPot(
       { seed: seed + 29, width: width * 0.6, opacity: opacity * 0.8 },
     );
   }
-}
-
-/** Renders a filled clay-toned vessel silhouette (for the "still life" family layout). */
-export function renderClayFill(
-  g: Selection<SVGGElement, unknown, any, any>,
-  cps: ControlPoint[],
-  cx: number,
-  topY: number,
-  heightPx: number,
-  tone: string,
-  opts: { opacity?: number; blurPx?: number } = {},
-) {
-  const dense = catmullRom(cps, 22);
-  const right = dense.map((p) => ({ x: cx + p.r * heightPx, y: topY + p.y * heightPx }));
-  const left = dense.map((p) => ({ x: cx - p.r * heightPx, y: topY + p.y * heightPx }));
-  const d =
-    lineGen(right) +
-    " L" +
-    [...left]
-      .reverse()
-      .map((p) => `${p.x},${p.y}`)
-      .join(" L") +
-    " Z";
-  g.append("path")
-    .attr("d", d)
-    .attr("fill", tone)
-    .attr("opacity", opts.opacity ?? 1)
-    .attr("stroke", "rgba(40,32,20,.28)")
-    .attr("stroke-width", 1)
-    .style("filter", opts.blurPx ? `blur(${opts.blurPx}px)` : "");
 }

@@ -6,7 +6,7 @@ const LAYOUTS: { key: FamilyLayout; label: string; desc: string }[] = [
   { key: "overlap", label: "sequence", desc: "one shelf, side by side" },
   { key: "grid", label: "mosaic", desc: "each study on its own sheet" },
   { key: "organic", label: "studio wall", desc: "one line, layered and overlapping" },
-  { key: "scene", label: "still life · 3D", desc: "clay, soft light, a little fog" },
+  { key: "scene", label: "still life · 3D", desc: "a real scene, drag to orbit" },
 ];
 
 const VESSEL_SETS: { key: VesselSetName; label: string; desc: string }[] = [

@@ -50,7 +50,7 @@ export function AppHeader() {
     <header className="grid h-14 flex-none grid-cols-[1fr_auto_1fr] items-center border-b border-border px-6">
       <div className="flex items-center gap-2.5">
         <span className="font-serif text-[22px] font-medium text-foreground">Line</span>
-        <span className="font-serif text-sm text-foreground/50">線</span>
+        <span className="font-serif text-xl text-foreground/50">線</span>
         <span className="size-1.5 rounded-full bg-accent" />
       </div>
 
