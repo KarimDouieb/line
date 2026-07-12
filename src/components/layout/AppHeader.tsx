@@ -98,7 +98,7 @@ export function AppHeader() {
                   {TEMPLATES.map((name) => (
                     <DropdownMenuItem
                       key={name}
-                      onSelect={() => {
+                      onClick={() => {
                         applyTemplate(name);
                         toast(`${name} loaded — drag the points`);
                       }}
@@ -112,7 +112,7 @@ export function AppHeader() {
                 <DropdownMenuItem
                   disabled
                   className="flex items-baseline justify-between opacity-45"
-                  onSelect={() => toast("photo → line — planned for a later study")}
+                  onClick={() => toast("photo → line — planned for a later study")}
                 >
                   <span>photo → line</span>
                   <Badge variant="outline" className="rounded-full text-[10px]">
