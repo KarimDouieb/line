@@ -1,12 +1,14 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { select } from "d3";
 import { useLineStore } from "@/store/line-store";
-import { catmullRom, fitStrokeToProfile, maxRadius, type ControlPoint } from "@/lib/line-math";
+import { fitStrokeToProfile, maxRadius, resolveHandle, type ControlPoint, type CurveNode } from "@/lib/line-math";
 import { renderInkStroke } from "@/lib/ink-style";
 import { useElementSize } from "@/hooks/use-element-size";
+import { PointTypeToolbar } from "@/components/draw/PointTypeToolbar";
 
 type Layout = { cx: number; topY: number; Hpx: number };
 type RawPoint = { x: number; y: number };
+type HandleSide = "in" | "out";
 
 function computeLayout(w: number, h: number, cps: ControlPoint[] | null): Layout {
   const mR = cps ? Math.max(0.35, maxRadius(cps)) : 0.5;
@@ -19,12 +21,22 @@ function toCanvas(p: ControlPoint, L: Layout) {
 function fromCanvas(x: number, y: number, L: Layout): ControlPoint {
   return { r: Math.max(0.005, Math.abs(x - L.cx) / L.Hpx), y: (y - L.topY) / L.Hpx };
 }
-function hitHandle(x: number, y: number, cps: ControlPoint[], L: Layout): number {
-  for (let i = 0; i < cps.length; i++) {
-    const q = toCanvas(cps[i], L);
+function hitAnchor(x: number, y: number, nodes: CurveNode[], L: Layout): number {
+  for (let i = 0; i < nodes.length; i++) {
+    const q = toCanvas(nodes[i], L);
     if (Math.hypot(q.x - x, q.y - y) < 16) return i;
   }
   return -1;
+}
+function hitHandleSquare(x: number, y: number, nodes: CurveNode[], index: number, L: Layout): HandleSide | null {
+  const node = nodes[index];
+  if (node.kind === "corner") return null;
+  for (const side of ["out", "in"] as const) {
+    const h = resolveHandle(nodes, index, side);
+    const q = toCanvas({ r: node.r + h.r, y: node.y + h.y }, L);
+    if (Math.hypot(q.x - x, q.y - y) < 14) return side;
+  }
+  return null;
 }
 
 /**
@@ -33,16 +45,29 @@ function hitHandle(x: number, y: number, cps: ControlPoint[], L: Layout): number
  * a single unified pointer handler on the SVG, matching how the original
  * mockup's custom element worked; the actual painting is a D3 data-driven
  * redraw keyed on the profile from the store.
+ *
+ * In "advanced" curve mode, tapping an anchor also selects it, revealing its
+ * tangent handles (only the selected node's — keeps the canvas readable)
+ * and the point-type toolbar. Simple mode never selects/shows handles, so
+ * its interaction and rendering are unchanged from before advanced mode
+ * existed.
  */
 export function InkCanvas() {
   const { ref: containerRef, size } = useElementSize<HTMLDivElement>();
   const svgRef = useRef<SVGSVGElement | null>(null);
 
+  const nodes = useLineStore((s) => s.nodes);
   const controlPoints = useLineStore((s) => s.controlPoints);
   const heightCm = useLineStore((s) => s.heightCm);
+  const curveMode = useLineStore((s) => s.curveMode);
+
+  const [selectedNode, setSelectedNode] = useState<number | null>(null);
+  const effectiveSelected =
+    curveMode === "advanced" && selectedNode !== null && nodes && selectedNode < nodes.length ? selectedNode : null;
 
   // Gesture state is transient — refs so it doesn't trigger a React render on every pointermove.
   const dragIndex = useRef<number | null>(null);
+  const dragHandle = useRef<{ index: number; side: HandleSide } | null>(null);
   const drawing = useRef(false);
   const rawPoints = useRef<RawPoint[]>([]);
 
@@ -91,7 +116,7 @@ export function InkCanvas() {
       }
     }
 
-    if (!controlPoints) {
+    if (!controlPoints || !nodes) {
       const text = root.append("g").attr("text-anchor", "middle");
       text
         .append("text")
@@ -109,20 +134,56 @@ export function InkCanvas() {
         .attr("fill", "rgba(60,50,35,.38)")
         .text("the line will be mirrored across the axis");
     } else {
-      const dense = catmullRom(controlPoints, 22);
+      const dense = controlPoints;
       const right = dense.map((p) => toCanvas(p, L));
       const left = dense.map((p) => toCanvas({ ...p, r: -p.r }, L));
       const strokeG = root.append("g");
       renderInkStroke(strokeG, left, { seed: 51, width: 3.2, opacity: 0.28 });
       renderInkStroke(strokeG, right, { seed: 9, width: 3.4, opacity: 1 });
 
-      const handles = root.append("g");
-      controlPoints.forEach((p) => {
-        const q = toCanvas(p, L);
-        handles.append("circle").attr("cx", q.x).attr("cy", q.y).attr("r", 4.5).attr("fill", "rgba(38,34,25,.82)");
+      if (effectiveSelected !== null) {
+        const node = nodes[effectiveSelected];
+        const anchorPt = toCanvas(node, L);
+        const whiskerG = root.append("g");
+        if (node.kind !== "corner") {
+          (["out", "in"] as const).forEach((side) => {
+            const h = resolveHandle(nodes, effectiveSelected, side);
+            const hPt = toCanvas({ r: node.r + h.r, y: node.y + h.y }, L);
+            whiskerG
+              .append("line")
+              .attr("x1", anchorPt.x)
+              .attr("y1", anchorPt.y)
+              .attr("x2", hPt.x)
+              .attr("y2", hPt.y)
+              .attr("stroke", "rgba(180,67,46,.55)")
+              .attr("stroke-width", 1);
+            const sz = 5.5;
+            whiskerG
+              .append("rect")
+              .attr("x", hPt.x - sz / 2)
+              .attr("y", hPt.y - sz / 2)
+              .attr("width", sz)
+              .attr("height", sz)
+              .attr("fill", "#fbf7ee")
+              .attr("stroke", "#b4432e")
+              .attr("stroke-width", 1.4);
+          });
+        }
+      }
+
+      const anchorsG = root.append("g");
+      nodes.forEach((n, i) => {
+        const q = toCanvas(n, L);
+        const isSelected = i === effectiveSelected;
+        anchorsG
+          .append("circle")
+          .attr("cx", q.x)
+          .attr("cy", q.y)
+          .attr("r", isSelected ? 5.5 : 4.5)
+          .attr("fill", isSelected ? "#b4432e" : "rgba(38,34,25,.82)");
       });
     }
-  }, [size.width, size.height, controlPoints, heightCm]);
+  }, [size.width, size.height, controlPoints, nodes, heightCm, effectiveSelected]);
 
   const getPos = (e: { clientX: number; clientY: number }) => {
     const rect = svgRef.current!.getBoundingClientRect();
@@ -144,28 +205,41 @@ export function InkCanvas() {
     const L = computeLayout(size.width, size.height, controlPoints);
     const store = useLineStore.getState();
 
-    if (controlPoints) {
-      const hi = hitHandle(x, y, controlPoints, L);
+    if (nodes) {
+      if (curveMode === "advanced" && effectiveSelected !== null) {
+        const side = hitHandleSquare(x, y, nodes, effectiveSelected, L);
+        if (side) {
+          store.snapshot();
+          dragHandle.current = { index: effectiveSelected, side };
+          return;
+        }
+      }
+
+      const hi = hitAnchor(x, y, nodes, L);
       if (hi >= 0) {
         store.snapshot();
         dragIndex.current = hi;
         return;
       }
-      const dense = catmullRom(controlPoints, 22).map((p) => toCanvas(p, L));
+
+      const dense = controlPoints ?? [];
       let best = Infinity;
-      for (const p of dense) best = Math.min(best, Math.hypot(p.x - x, p.y - y));
+      for (const p of dense) best = Math.min(best, Math.hypot(toCanvas(p, L).x - x, toCanvas(p, L).y - y));
       if (best < 18) {
         const np = fromCanvas(x, y, L);
-        let ins = controlPoints.length - 1;
-        for (let i = 0; i < controlPoints.length - 1; i++) {
-          if (np.y > controlPoints[i].y && np.y <= controlPoints[i + 1].y) {
+        let ins = nodes.length - 1;
+        for (let i = 0; i < nodes.length - 1; i++) {
+          if (np.y > nodes[i].y && np.y <= nodes[i + 1].y) {
             ins = i + 1;
             break;
           }
         }
-        store.insertControlPoint(ins, np);
+        store.insertNode(ins, np);
         dragIndex.current = ins;
+        return;
       }
+
+      if (curveMode === "advanced") setSelectedNode(null);
       return;
     }
     drawing.current = true;
@@ -174,9 +248,17 @@ export function InkCanvas() {
 
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
     const { x, y } = getPos(e);
+    if (dragHandle.current) {
+      const L = computeLayout(size.width, size.height, controlPoints);
+      const { index, side } = dragHandle.current;
+      const anchor = nodes![index];
+      const p = fromCanvas(x, y, L);
+      useLineStore.getState().setNodeHandle(index, side, { r: p.r - anchor.r, y: p.y - anchor.y });
+      return;
+    }
     if (dragIndex.current !== null) {
       const L = computeLayout(size.width, size.height, controlPoints);
-      useLineStore.getState().updateControlPoint(dragIndex.current, fromCanvas(x, y, L));
+      useLineStore.getState().moveNode(dragIndex.current, fromCanvas(x, y, L));
       return;
     }
     if (drawing.current) {
@@ -189,7 +271,12 @@ export function InkCanvas() {
   };
 
   const onPointerUp = () => {
+    if (dragHandle.current) {
+      dragHandle.current = null;
+      return;
+    }
     if (dragIndex.current !== null) {
+      if (curveMode === "advanced") setSelectedNode(dragIndex.current);
       dragIndex.current = null;
       return;
     }
@@ -199,6 +286,7 @@ export function InkCanvas() {
       const fit = fitStrokeToProfile(rawPoints.current, L.cx);
       rawPoints.current = [];
       if (fit) {
+        setSelectedNode(null);
         useLineStore.getState().setControlPoints(fit);
       } else if (svgRef.current) {
         select(svgRef.current).select("g.raw-stroke").remove();
@@ -207,11 +295,20 @@ export function InkCanvas() {
   };
 
   const onDoubleClick = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (!controlPoints || controlPoints.length <= 4) return;
+    if (!nodes) return;
+    const minCount = curveMode === "advanced" ? 2 : 4;
+    if (nodes.length <= minCount) return;
     const { x, y } = getPos(e);
     const L = computeLayout(size.width, size.height, controlPoints);
-    const hi = hitHandle(x, y, controlPoints, L);
-    if (hi > 0 && hi < controlPoints.length - 1) useLineStore.getState().removeControlPoint(hi);
+    const hi = hitAnchor(x, y, nodes, L);
+    if (hi > 0 && hi < nodes.length - 1) {
+      useLineStore.getState().removeNode(hi);
+      setSelectedNode((prev) => {
+        if (prev === null) return null;
+        if (prev === hi) return null;
+        return prev > hi ? prev - 1 : prev;
+      });
+    }
   };
 
   return (
@@ -227,6 +324,12 @@ export function InkCanvas() {
         onPointerCancel={onPointerUp}
         onDoubleClick={onDoubleClick}
       />
+      {effectiveSelected !== null && nodes && (
+        <PointTypeToolbar
+          kind={nodes[effectiveSelected].kind}
+          onPick={(kind) => useLineStore.getState().setNodeKind(effectiveSelected, kind)}
+        />
+      )}
     </div>
   );
 }

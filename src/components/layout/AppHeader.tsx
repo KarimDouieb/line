@@ -33,6 +33,8 @@ export function AppHeader() {
   const clear = useLineStore((s) => s.clear);
   const undo = useLineStore((s) => s.undo);
   const applyTemplate = useLineStore((s) => s.applyTemplate);
+  const curveMode = useLineStore((s) => s.curveMode);
+  const setCurveMode = useLineStore((s) => s.setCurveMode);
 
   // Decoupled from the store so an in-progress edit (e.g. clearing the field
   // to retype) doesn't get clobbered by the "committed" value re-rendering it.
@@ -76,6 +78,15 @@ export function AppHeader() {
             <Button variant="ghost" size="sm" className="rounded-full text-xs font-medium" onClick={() => undo()}>
               undo
             </Button>
+            <Button
+              variant={curveMode === "advanced" ? "default" : "ghost"}
+              size="sm"
+              className="rounded-full text-xs font-medium"
+              onClick={() => setCurveMode(curveMode === "advanced" ? "simple" : "advanced")}
+            >
+              advanced
+            </Button>
+            <div className="mx-1 h-4 w-px bg-border" />
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={

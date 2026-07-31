@@ -1,25 +1,50 @@
 import { create } from "zustand";
 import {
   PRESETS,
+  applyHandleDrag,
+  controlPointsToNodes,
+  densifyCurve,
   type AdaptMode,
   type ControlPoint,
+  type CurveNode,
+  type PointKind,
   type VesselSetName,
 } from "@/lib/line-math";
 
 export type FamilyLayout = "overlap" | "grid" | "organic" | "scene";
+export type CurveMode = "simple" | "advanced";
 
 const UNDO_LIMIT = 40;
+/** Bezier samples per segment for the derived dense profile — see densifyCurve. */
+const DENSIFY_RESOLUTION = 16;
+
+function cloneNodes(nodes: CurveNode[] | null): CurveNode[] | null {
+  if (!nodes) return null;
+  return nodes.map((n) => ({
+    ...n,
+    handleIn: n.handleIn ? { ...n.handleIn } : null,
+    handleOut: n.handleOut ? { ...n.handleOut } : null,
+  }));
+}
+
+function densify(nodes: CurveNode[] | null): ControlPoint[] | null {
+  return nodes ? densifyCurve(nodes, DENSIFY_RESOLUTION) : null;
+}
 
 type LineStore = {
+  /** The editable, sparse source of truth (anchors + tangent handles). */
+  nodes: CurveNode[] | null;
+  /** Dense samples derived from `nodes` — this is the profile every other part of the app (family layouts, the 3D scene, export) consumes, unchanged from before advanced editing existed. */
   controlPoints: ControlPoint[] | null;
-  undoStack: (ControlPoint[] | null)[];
+  undoStack: (CurveNode[] | null)[];
   heightCm: number;
   layout: FamilyLayout;
   vesselSet: VesselSetName;
   adapt: AdaptMode;
   familyVisible: boolean;
+  curveMode: CurveMode;
 
-  /** Snapshot the current profile onto the undo stack (call before a destructive edit). */
+  /** Snapshot the current nodes onto the undo stack (call before a destructive edit). */
   snapshot: () => void;
   /** Replace the whole profile — used once a freehand stroke has been fitted. */
   setControlPoints: (cps: ControlPoint[] | null) => void;
@@ -27,10 +52,15 @@ type LineStore = {
   clear: () => void;
   undo: () => void;
 
-  /** Move a single point, clamped so it can't cross its neighbors; renormalizes if an end moved. */
-  updateControlPoint: (i: number, next: ControlPoint) => void;
-  insertControlPoint: (i: number, point: ControlPoint) => void;
-  removeControlPoint: (i: number) => void;
+  /** Move a single anchor, clamped so it can't cross its neighbors; renormalizes if an end moved. */
+  moveNode: (i: number, next: ControlPoint) => void;
+  insertNode: (i: number, point: ControlPoint) => void;
+  removeNode: (i: number) => void;
+
+  setCurveMode: (mode: CurveMode) => void;
+  /** Drag one tangent handle; mirrors the opposite handle per the node's point kind (see applyHandleDrag). */
+  setNodeHandle: (i: number, side: "in" | "out", offset: { r: number; y: number }) => void;
+  setNodeKind: (i: number, kind: PointKind) => void;
 
   setHeightCm: (v: number) => void;
   setLayout: (l: FamilyLayout) => void;
@@ -39,78 +69,112 @@ type LineStore = {
   toggleFamilyVisible: () => void;
 };
 
+const initialNodes = controlPointsToNodes(PRESETS.vase.map((p) => ({ ...p })));
+
 export const useLineStore = create<LineStore>((set, get) => ({
-  controlPoints: PRESETS.vase.map((p) => ({ ...p })),
+  nodes: initialNodes,
+  controlPoints: densify(initialNodes),
   undoStack: [],
   heightCm: 18,
   layout: "overlap",
   vesselSet: "studio",
   adapt: "uniform",
   familyVisible: true,
+  curveMode: "simple",
 
   snapshot: () =>
     set((s) => {
-      const stack = [...s.undoStack, s.controlPoints ? s.controlPoints.map((p) => ({ ...p })) : null];
+      const stack = [...s.undoStack, cloneNodes(s.nodes)];
       if (stack.length > UNDO_LIMIT) stack.shift();
       return { undoStack: stack };
     }),
 
   setControlPoints: (cps) => {
     get().snapshot();
-    set({ controlPoints: cps });
+    const nodes = cps ? controlPointsToNodes(cps) : null;
+    set({ nodes, controlPoints: densify(nodes) });
   },
 
   applyTemplate: (name) => {
     get().snapshot();
-    set({ controlPoints: PRESETS[name].map((p) => ({ ...p })) });
+    const nodes = controlPointsToNodes(PRESETS[name].map((p) => ({ ...p })));
+    set({ nodes, controlPoints: densify(nodes) });
   },
 
   clear: () => {
     get().snapshot();
-    set({ controlPoints: null });
+    set({ nodes: null, controlPoints: null });
   },
 
   undo: () =>
     set((s) => {
       if (s.undoStack.length === 0) return s;
       const stack = s.undoStack.slice(0, -1);
-      const prev = s.undoStack.at(-1);
-      return { undoStack: stack, controlPoints: prev };
+      const prevNodes = s.undoStack.at(-1) ?? null;
+      return { undoStack: stack, nodes: prevNodes, controlPoints: densify(prevNodes) };
     }),
 
-  updateControlPoint: (i, next) =>
+  moveNode: (i, next) =>
     set((s) => {
-      if (!s.controlPoints) return s;
-      const cps = s.controlPoints.map((p) => ({ ...p }));
-      const lo = i > 0 ? cps[i - 1].y + 0.01 : -0.06;
-      const hi = i < cps.length - 1 ? cps[i + 1].y - 0.01 : 1.06;
-      cps[i] = { r: Math.min(1.4, next.r), y: Math.min(hi, Math.max(lo, next.y)) };
-      if (i === 0 || i === cps.length - 1) {
-        const y0 = cps[0].y;
-        const y1 = cps.at(-1)!.y;
+      if (!s.nodes) return s;
+      const nodes = s.nodes.map((n) => ({ ...n }));
+      const lo = i > 0 ? nodes[i - 1].y + 0.01 : -0.06;
+      const hi = i < nodes.length - 1 ? nodes[i + 1].y - 0.01 : 1.06;
+      nodes[i] = { ...nodes[i], r: Math.min(1.4, next.r), y: Math.min(hi, Math.max(lo, next.y)) };
+      if (i === 0 || i === nodes.length - 1) {
+        const y0 = nodes[0].y;
+        const y1 = nodes.at(-1)!.y;
         const span = y1 - y0;
-        if (span > 0.2) cps.forEach((p) => (p.y = (p.y - y0) / span));
+        if (span > 0.2) nodes.forEach((n) => (n.y = (n.y - y0) / span));
       }
-      return { controlPoints: cps };
+      return { nodes, controlPoints: densify(nodes) };
     }),
 
-  insertControlPoint: (i, point) => {
+  insertNode: (i, point) => {
     get().snapshot();
     set((s) => {
-      if (!s.controlPoints) return s;
-      const cps = s.controlPoints.map((p) => ({ ...p }));
-      cps.splice(i, 0, point);
-      return { controlPoints: cps };
+      if (!s.nodes) return s;
+      const nodes = s.nodes.map((n) => ({ ...n }));
+      nodes.splice(i, 0, { r: point.r, y: point.y, kind: "smooth", handleIn: null, handleOut: null });
+      return { nodes, controlPoints: densify(nodes) };
     });
   },
 
-  removeControlPoint: (i) => {
+  removeNode: (i) => {
     get().snapshot();
     set((s) => {
-      if (!s.controlPoints) return s;
-      const cps = s.controlPoints.map((p) => ({ ...p }));
-      cps.splice(i, 1);
-      return { controlPoints: cps };
+      if (!s.nodes) return s;
+      const nodes = s.nodes.map((n) => ({ ...n }));
+      nodes.splice(i, 1);
+      return { nodes, controlPoints: densify(nodes) };
+    });
+  },
+
+  setCurveMode: (mode) => set({ curveMode: mode }),
+
+  setNodeHandle: (i, side, offset) =>
+    set((s) => {
+      if (!s.nodes) return s;
+      const nodes = s.nodes.slice();
+      nodes[i] = applyHandleDrag(s.nodes, i, side, offset);
+      return { nodes, controlPoints: densify(nodes) };
+    }),
+
+  setNodeKind: (i, kind) => {
+    get().snapshot();
+    set((s) => {
+      if (!s.nodes) return s;
+      const nodes = s.nodes.map((n) => ({ ...n }));
+      const node = { ...nodes[i], kind };
+      if (kind === "corner") {
+        node.handleIn = null;
+        node.handleOut = null;
+      } else if (kind === "smooth") {
+        if (node.handleOut) node.handleIn = { r: -node.handleOut.r, y: -node.handleOut.y };
+        else if (node.handleIn) node.handleOut = { r: -node.handleIn.r, y: -node.handleIn.y };
+      }
+      nodes[i] = node;
+      return { nodes, controlPoints: densify(nodes) };
     });
   },
 

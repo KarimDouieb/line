@@ -7,7 +7,7 @@
  * draws them.
  */
 import { line as d3Line, curveCatmullRom, type Selection } from "d3";
-import { catmullRom, srnd, type ControlPoint } from "@/lib/line-math";
+import { srnd, type ControlPoint } from "@/lib/line-math";
 
 export const INK = "#262219";
 
@@ -63,7 +63,8 @@ export function renderInkStroke(
 /**
  * Renders one full mirrored vessel outline (a pair of ink strokes plus a
  * light base squiggle and, optionally, a rim hint) at the given canvas box.
- * `cx`/`topY`/`heightPx` place the box; `cps` is the profile to draw.
+ * `cx`/`topY`/`heightPx` place the box; `cps` is the (already-dense —
+ * see `densifyCurve`) profile to draw.
  */
 export function renderPot(
   g: Selection<SVGGElement, unknown, any, any>,
@@ -73,7 +74,7 @@ export function renderPot(
   heightPx: number,
   opts: { seed?: number; width?: number; opacity?: number; rim?: boolean; base?: boolean } = {},
 ) {
-  const dense = catmullRom(cps, 22);
+  const dense = cps;
   const right = dense.map((p) => ({ x: cx + p.r * heightPx, y: topY + p.y * heightPx }));
   const left = dense.map((p) => ({ x: cx - p.r * heightPx, y: topY + p.y * heightPx }));
   const seed = opts.seed ?? 7;
@@ -83,7 +84,7 @@ export function renderPot(
   renderInkStroke(g, right, { seed, width, opacity });
   renderInkStroke(g, left, { seed: seed + 41, width, opacity: opacity * 0.82 });
 
-  const rb = dense[dense.length - 1].r * heightPx;
+  const rb = dense.at(-1)!.r * heightPx;
   if (opts.base !== false && rb > 2) {
     const by = topY + heightPx;
     renderInkStroke(

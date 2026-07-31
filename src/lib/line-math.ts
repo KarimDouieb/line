@@ -21,6 +21,21 @@ export type VesselSetName = "studio" | "classical" | "cafe" | "ikebana";
 
 export type Variant = { label: string; w: number; h: number };
 
+/**
+ * A point's tangent-handle behavior — the "simple mode" editor only ever
+ * produces `"smooth"` points with auto (`null`) handles; `"advanced" mode
+ * lets a point become a sharp `"corner"`, an `"asymmetric"` smooth point
+ * (mirrored angle, independent handle lengths), or fully `"free"`
+ * (disconnected handles, for an intentional cusp).
+ */
+export type PointKind = "corner" | "smooth" | "asymmetric" | "free";
+
+/** A tangent handle, as an (r,y) offset *relative to its anchor*. `null` = auto (resolved from neighbors). */
+export type Handle = { r: number; y: number } | null;
+
+/** An editable curve anchor: the profile the draw canvas actually edits. */
+export type CurveNode = { r: number; y: number; kind: PointKind; handleIn: Handle; handleOut: Handle };
+
 /** Deterministic pseudo-random noise, seeded — used so ink jitter is stable across re-renders. */
 export function rnd(seed: number): number {
   const s = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
@@ -32,36 +47,98 @@ export function srnd(seed: number): number {
   return rnd(seed) - 0.5;
 }
 
-/** Catmull-Rom spline through the control points — the dense curve actually drawn/exported. */
-export function catmullRom(cps: ControlPoint[], resolution = 18): ControlPoint[] {
+/** Wraps a plain point list (from `fitStrokeToProfile` or `PRESETS`) into all-smooth, all-auto curve nodes. */
+export function controlPointsToNodes(cps: ControlPoint[]): CurveNode[] {
+  return cps.map((p) => ({ r: p.r, y: p.y, kind: "smooth", handleIn: null, handleOut: null }));
+}
+
+function autoTangent(nodes: CurveNode[], i: number): { r: number; y: number } {
+  const prev = nodes[Math.max(i - 1, 0)];
+  const next = nodes[Math.min(i + 1, nodes.length - 1)];
+  return { r: (next.r - prev.r) / 6, y: (next.y - prev.y) / 6 };
+}
+
+/**
+ * The effective (resolved) handle for one side of a node: the explicit
+ * offset if the user set one, otherwise the auto tangent — the exact
+ * Catmull-Rom-equivalent formula (`(next - prev) / 6`, mirrored between
+ * `in`/`out`), using the same neighbor-clamping the old Catmull-Rom spline
+ * used at the ends. `"corner"` points always resolve to zero (no handle),
+ * regardless of any stored value.
+ */
+export function resolveHandle(nodes: CurveNode[], i: number, side: "in" | "out"): { r: number; y: number } {
+  const node = nodes[i];
+  if (node.kind === "corner") return { r: 0, y: 0 };
+  const explicit = side === "out" ? node.handleOut : node.handleIn;
+  if (explicit) return explicit;
+  const tangent = autoTangent(nodes, i);
+  return side === "out" ? tangent : { r: -tangent.r, y: -tangent.y };
+}
+
+/**
+ * Applies the per-`kind` mirroring rule for a dragged handle and returns the
+ * updated node: `"smooth"` mirrors the opposite handle's angle *and*
+ * length, `"asymmetric"` mirrors only the angle (keeping the opposite
+ * handle's own length), `"free"` leaves the opposite handle untouched.
+ * `"corner"` points never reach here — the UI doesn't offer a handle to drag.
+ */
+export function applyHandleDrag(
+  nodes: CurveNode[],
+  i: number,
+  side: "in" | "out",
+  offset: { r: number; y: number },
+): CurveNode {
+  const node = nodes[i];
+  const otherSide = side === "out" ? "in" : "out";
+  let nextOther: Handle = side === "out" ? node.handleIn : node.handleOut;
+
+  if (node.kind === "smooth") {
+    nextOther = { r: -offset.r, y: -offset.y };
+  } else if (node.kind === "asymmetric") {
+    const resolvedOther = resolveHandle(nodes, i, otherSide);
+    const len = Math.hypot(resolvedOther.r, resolvedOther.y) || Math.hypot(offset.r, offset.y) || 0.001;
+    const angle = Math.atan2(offset.y, offset.r) + Math.PI;
+    nextOther = { r: Math.cos(angle) * len, y: Math.sin(angle) * len };
+  }
+
+  if (side === "out") return { ...node, handleOut: offset, handleIn: nextOther };
+  return { ...node, handleIn: offset, handleOut: nextOther };
+}
+
+function evalCubicBezier(p0: ControlPoint, p1: ControlPoint, p2: ControlPoint, p3: ControlPoint, t: number): ControlPoint {
+  const mt = 1 - t;
+  const a = mt * mt * mt;
+  const b = 3 * mt * mt * t;
+  const c = 3 * mt * t * t;
+  const d = t * t * t;
+  return { r: a * p0.r + b * p1.r + c * p2.r + d * p3.r, y: a * p0.y + b * p1.y + c * p2.y + d * p3.y };
+}
+
+/**
+ * Samples a piecewise-cubic-Bezier curve through `nodes` — the dense curve
+ * actually drawn/exported. For any node still on its auto ("smooth", no
+ * explicit handles) tangent, this reproduces the old Catmull-Rom spline
+ * exactly (see `autoTangent`); customized nodes (corners, asymmetric or
+ * free handles) bend the same math to whatever the user set.
+ */
+export function densifyCurve(nodes: CurveNode[], resolutionPerSegment = 16): ControlPoint[] {
+  if (nodes.length < 2) return nodes.map((n) => ({ r: n.r, y: n.y }));
   const out: ControlPoint[] = [];
-  if (cps.length < 2) return cps.slice();
-  for (let i = 0; i < cps.length - 1; i++) {
-    const p0 = cps[Math.max(i - 1, 0)];
-    const p1 = cps[i];
-    const p2 = cps[i + 1];
-    const p3 = cps[Math.min(i + 2, cps.length - 1)];
-    for (let j = 0; j < resolution; j++) {
-      const t = j / resolution;
-      const t2 = t * t;
-      const t3 = t2 * t;
-      out.push({
-        r:
-          0.5 *
-          (2 * p1.r +
-            (-p0.r + p2.r) * t +
-            (2 * p0.r - 5 * p1.r + 4 * p2.r - p3.r) * t2 +
-            (-p0.r + 3 * p1.r - 3 * p2.r + p3.r) * t3),
-        y:
-          0.5 *
-          (2 * p1.y +
-            (-p0.y + p2.y) * t +
-            (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
-            (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3),
-      });
+  for (let i = 0; i < nodes.length - 1; i++) {
+    const a = nodes[i];
+    const b = nodes[i + 1];
+    const outH = resolveHandle(nodes, i, "out");
+    const inH = resolveHandle(nodes, i + 1, "in");
+    const p0: ControlPoint = { r: a.r, y: a.y };
+    const p1: ControlPoint = { r: a.r + outH.r, y: a.y + outH.y };
+    const p2: ControlPoint = { r: b.r + inH.r, y: b.y + inH.y };
+    const p3: ControlPoint = { r: b.r, y: b.y };
+    for (let j = 0; j < resolutionPerSegment; j++) {
+      out.push(evalCubicBezier(p0, p1, p2, p3, j / resolutionPerSegment));
     }
   }
-  out.push({ r: cps[cps.length - 1].r, y: cps[cps.length - 1].y });
+  const last = nodes[nodes.length - 1];
+  out.push({ r: last.r, y: last.y });
   return out;
 }
 
@@ -145,9 +222,9 @@ export function fitStrokeToProfile(raw: RawPoint[], axisX: number): ControlPoint
   return norm;
 }
 
-/** Largest radius in the (densified) profile — used to size the vessel's bounding box. */
+/** Largest radius in the profile — used to size the vessel's bounding box. Input is expected to already be dense (see `densifyCurve`); a direct max avoids rounding off a sharp corner the way re-splining would. */
 export function maxRadius(cps: ControlPoint[]): number {
-  return Math.max(...catmullRom(cps, 8).map((p) => p.r));
+  return Math.max(...cps.map((p) => p.r));
 }
 
 /**
@@ -305,10 +382,10 @@ export function computeDimensionsLabel(cm: number, mR: number, v: Variant, mode:
   return `${(cm * v.h).toFixed(0)} × ${(cm * 2 * effectiveMaxRadius(mR, v, mode)).toFixed(0)} cm`;
 }
 
-/** Real-size (mm) SVG document for the profile at the given height — the actual export artifact. */
+/** Real-size (mm) SVG document for the profile at the given height — the actual export artifact. `cps` is expected to already be dense (see `densifyCurve`). */
 export function buildSvgExport(cps: ControlPoint[], heightCm: number): { svg: string; filename: string } {
   const mm = heightCm * 10;
-  const dense = catmullRom(cps, 24);
+  const dense = cps;
   const mR = maxRadius(cps);
   const width = mR * 2 * mm + 20;
   const height = mm + 20;

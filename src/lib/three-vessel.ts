@@ -7,14 +7,14 @@
  * framework-free.
  */
 import * as THREE from "three";
-import { catmullRom, maxRadius, type ControlPoint } from "@/lib/line-math";
+import { maxRadius, type ControlPoint } from "@/lib/line-math";
 
 export function buildVesselGeometry(
   cps: ControlPoint[],
   heightUnits: number,
   opts: { wallThickness?: number; radialSegments?: number } = {},
 ): THREE.LatheGeometry {
-  const dense = catmullRom(cps, 24); // ordered rim (y=0) -> foot (y=1)
+  const dense = cps; // already dense (see densifyCurve), ordered rim (y=0) -> foot (y=1)
   const mR = maxRadius(cps);
   const wallThickness = opts.wallThickness ?? Math.max(heightUnits * 0.012, mR * heightUnits * 0.05);
   const radialSegments = opts.radialSegments ?? 48;
