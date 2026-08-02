@@ -6,6 +6,7 @@ const LAYOUTS: { key: FamilyLayout; label: string; desc: string }[] = [
   { key: "overlap", label: "sequence", desc: "one shelf, side by side" },
   { key: "grid", label: "mosaic", desc: "each study on its own sheet" },
   { key: "organic", label: "studio wall", desc: "one line, layered and overlapping" },
+  { key: "echo", label: "echo", desc: "every size, one footprint" },
   { key: "scene", label: "still life · 3D", desc: "a real scene, drag to orbit" },
 ];
 

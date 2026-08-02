@@ -7,6 +7,7 @@ import { renderShelfLayout } from "./layouts/shelf";
 import { renderGridLayout } from "./layouts/grid";
 import { renderOverlapLayout } from "./layouts/overlap";
 import { renderOrganicLayout } from "./layouts/organic";
+import { renderEchoLayout } from "./layouts/echo";
 import type { HitBox, LayoutRenderer } from "./layouts/types";
 
 /** The D3/SVG layouts — "still life · 3D" is a real Three.js scene, handled separately by SceneThree. */
@@ -17,6 +18,7 @@ const RENDERERS: Record<CanvasLayout, LayoutRenderer> = {
   overlap: renderOverlapLayout,
   grid: renderGridLayout,
   organic: renderOrganicLayout,
+  echo: renderEchoLayout,
 };
 
 type FamilyBoardCanvasProps = {

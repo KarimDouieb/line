@@ -11,7 +11,7 @@ import {
   type VesselSetName,
 } from "@/lib/line-math";
 
-export type FamilyLayout = "overlap" | "grid" | "organic" | "scene";
+export type FamilyLayout = "overlap" | "grid" | "organic" | "echo" | "scene";
 export type CurveMode = "simple" | "advanced";
 
 const UNDO_LIMIT = 40;
