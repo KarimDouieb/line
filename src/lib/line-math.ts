@@ -16,7 +16,7 @@
 
 export type ControlPoint = { r: number; y: number };
 export type RawPoint = { x: number; y: number };
-export type AdaptMode = "uniform" | "neck" | "foot" | "ends" | "weight";
+export type AdaptMode = "uniform" | "neck" | "foot" | "ends" | "weight" | "flare";
 export type VesselSetName = "studio" | "classical" | "cafe" | "ikebana";
 
 export type Variant = { label: string; w: number; h: number };
@@ -249,6 +249,7 @@ function clampKeep(baseline: number, h: number): number {
  * proportions recognizable per `mode` instead of naively squashing everything.
  */
 export function remapProfile(cps: ControlPoint[], w: number, h: number, mode: AdaptMode): ControlPoint[] {
+  if (mode === "flare") return remapFlare(cps, w, h);
   return cps.map((p) => {
     let y = p.y;
     if (mode === "neck") {
@@ -281,12 +282,53 @@ function massFactor(h: number): number {
 }
 
 /**
+ * "flare" mode: a rigid reposition, not a reshape. Every point moves by the
+ * *same* offset (or, in the overlap-avoidance case below, the same scale
+ * factor) — so the drawn silhouette's own shape is pixel-for-pixel
+ * preserved, just relocated. That alone is what makes the rim and the foot
+ * read as "opening wider": both normally sit closer to the axis than the
+ * belly, so an identical outward shift is a much bigger *relative* change
+ * for them than for the belly, which was already near the target edge.
+ * `mR` (this curve's own widest point) lands exactly on the variant's
+ * target half-width `(mR * w) / h` — "positioned at the end of it".
+ *
+ * The one case a constant offset can't handle: if the target half-width is
+ * *narrower* than the curve's own natural reach, translating would push the
+ * narrow end (e.g. a neck) past the centre axis and overlap its mirror. `k`
+ * blends smoothly from a pure translation (`k = 1`) to plain proportional
+ * scaling (`k = targetR / mR`) exactly in that regime — the only time this
+ * mode alters the drawn aspect ratio, and only enough to keep the whole
+ * span within the target half-width.
+ *
+ * This never forces any single point to jump ahead of its neighbors, so
+ * there's no discontinuity for the renderer to smooth through, and no gap
+ * between the wall and the base line it closes with — the wall's actual
+ * (translated) foot is exactly where `renderPot`'s ordinary base line
+ * already closes it, same as every other mode. Earlier versions of this
+ * mode tried to additionally force the foot all the way out to the target
+ * edge — as a jumped point, an eased taper, and finally a separately-drawn
+ * wider base line — and every one of those either overshot, kinked, or
+ * (the base line) visibly detached from the wall whenever the drawn curve's
+ * foot was much narrower than its widest point. The translation above is
+ * the whole effect: it already reads as "opened wider" without any of that.
+ */
+function remapFlare(cps: ControlPoint[], w: number, h: number): ControlPoint[] {
+  const mR = maxRadius(cps);
+  const targetR = (mR * w) / h;
+  const k = Math.min(1, targetR / mR);
+  const offset = targetR - mR * k;
+  return cps.map((p) => ({ r: p.r * k + offset, y: p.y }));
+}
+
+/**
  * The actual max radius (as a fraction of height) a variant renders at once
  * `remapProfile` gets done with it — `mR * v.w` alone is only correct when
  * `v.h === 1`; every other variant also gets divided by `v.h` (and, in
  * "weight" mode, further scaled by `massFactor`). Layouts must size and
  * space vessels using this, not the raw `mR * v.w`, or the on-screen result
  * drifts from — and can overflow — what was actually allocated for it.
+ * "flare" needs no case of its own: `remapFlare` is built to land its
+ * widest point exactly on `(mR * v.w) / v.h`, the same as `base` below.
  */
 export function effectiveMaxRadius(mR: number, v: Variant, mode: AdaptMode): number {
   const base = (mR * v.w) / v.h;

@@ -22,6 +22,7 @@ const ADAPTATIONS: { key: AdaptMode; label: string; desc: string }[] = [
   { key: "foot", label: "keep foot", desc: "the base stays true" },
   { key: "ends", label: "keep both ends", desc: "rim and foot true, the belly stretches" },
   { key: "weight", label: "keep weight", desc: "width follows height — same visual mass" },
+  { key: "flare", label: "flare ends", desc: "the line shifts outward as one piece — rim and foot open the most" },
 ];
 
 function Section<T extends string>({
