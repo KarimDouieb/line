@@ -19,7 +19,10 @@ export function renderOrganicLayout(ctx: LayoutCtx): HitBox[] {
   const hits: HitBox[] = [];
   const g = root.append("g");
 
-  const radiusOf = (v: Variant) => effectiveMaxRadius(mR, v, adapt);
+  // See overlap.ts: `effectiveMaxRadius` is a radius as a fraction of `v.h`,
+  // so it needs `* v.h` here to become an actual width — otherwise short/
+  // squat variants read as needing more space than they actually render at.
+  const radiusOf = (v: Variant) => effectiveMaxRadius(mR, v, adapt) * v.h;
   const widthOf = (v: Variant) => Math.max(0.3, 2 * radiusOf(v));
   const placed = computeClusterX(vs, { widthOf, heightOf: (v) => v.h });
 

@@ -8,7 +8,10 @@ export function renderShelfLayout(ctx: LayoutCtx): HitBox[] {
   const hits: HitBox[] = [];
   const g = root.append("g");
 
-  const widthOf = (v: (typeof vs)[number]) => Math.max(0.3, 2 * effectiveMaxRadius(mR, v, adapt));
+  // See overlap.ts: `effectiveMaxRadius` is a radius as a fraction of `v.h`,
+  // so it needs `* v.h` here to become an actual width — otherwise short/
+  // squat variants read as needing more space than they actually render at.
+  const widthOf = (v: (typeof vs)[number]) => Math.max(0.3, 2 * effectiveMaxRadius(mR, v, adapt) * v.h);
   const maxH = Math.max(...vs.map((v) => v.h));
   const totalUnits = vs.reduce((s, v) => s + widthOf(v), 0);
   const unit = Math.min((h - 46) / maxH, w / (totalUnits * 1.15 + 0.5));
