@@ -1,11 +1,14 @@
 import { toast } from "sonner";
 import { useLineStore } from "@/store/line-store";
 import { downloadSvgProfile } from "@/lib/export-svg";
+import { downloadFamilyPdf } from "@/lib/export-pdf";
 import { ExportRow } from "@/components/export/ExportRow";
 
 export function ExportPage() {
   const controlPoints = useLineStore((s) => s.controlPoints);
   const heightCm = useLineStore((s) => s.heightCm);
+  const vesselSet = useLineStore((s) => s.vesselSet);
+  const adapt = useLineStore((s) => s.adapt);
 
   return (
     <div className="mx-auto mt-14 max-w-xl px-5">
@@ -25,9 +28,12 @@ export function ExportPage() {
       />
       <ExportRow
         title="PDF at real scale"
-        description="print, cut, hold against the wheel"
-        status="soon"
-        onAction={() => toast("PDF at real scale — coming soon")}
+        description="one page per shape, print, cut, hold against the wheel"
+        status="active"
+        onAction={async () => {
+          const ok = await downloadFamilyPdf(controlPoints, heightCm, vesselSet, adapt);
+          toast(ok ? "PDF saved — one page per shape, real size" : "draw a line first");
+        }}
       />
       <ExportRow
         title="Turning ribs · 3D print"
