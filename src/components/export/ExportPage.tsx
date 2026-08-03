@@ -25,11 +25,11 @@ export function ExportPage() {
 
       <ExportRow
         title="SVG profile"
-        description="outline in mm — for templates & ribs"
+        description="every shape, outline in mm — for templates & ribs"
         status="active"
         onAction={() => {
-          const ok = downloadSvgProfile(controlPoints, heightCm);
-          toast(ok ? "SVG profile saved — real size, mm" : "draw a line first");
+          const ok = downloadSvgProfile(controlPoints, heightCm, vesselSet, adapt);
+          toast(ok ? "SVG saved — every shape, real size, mm" : "draw a line first");
         }}
       />
       <ExportRow

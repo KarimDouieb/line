@@ -424,29 +424,70 @@ export function computeDimensionsLabel(cm: number, mR: number, v: Variant, mode:
   return `${(cm * v.h).toFixed(0)} × ${(cm * 2 * effectiveMaxRadius(mR, v, mode)).toFixed(0)} cm`;
 }
 
-/** Real-size (mm) SVG document for the profile at the given height — the actual export artifact. `cps` is expected to already be dense (see `densifyCurve`). */
-export function buildSvgExport(cps: ControlPoint[], heightCm: number): { svg: string; filename: string } {
-  const mm = heightCm * 10;
-  const dense = cps;
-  const mR = maxRadius(cps);
-  const width = mR * 2 * mm + 20;
-  const height = mm + 20;
-  const cx = width / 2;
-  const top = 10;
-
+/** The mirrored outline path for one profile at real mm scale, centered on `cx` with its rim at `top`. */
+function svgProfilePath(cps: ControlPoint[], mmHeight: number, cx: number, top: number): string {
   let d = "";
-  dense.forEach((pt, i) => {
-    d += `${i ? "L" : "M"}${(cx + pt.r * mm).toFixed(2)} ${(top + pt.y * mm).toFixed(2)} `;
+  cps.forEach((pt, i) => {
+    d += `${i ? "L" : "M"}${(cx + pt.r * mmHeight).toFixed(2)} ${(top + pt.y * mmHeight).toFixed(2)} `;
   });
-  for (let i = dense.length - 1; i >= 0; i--) {
-    d += `L${(cx - dense[i].r * mm).toFixed(2)} ${(top + dense[i].y * mm).toFixed(2)} `;
+  for (let i = cps.length - 1; i >= 0; i--) {
+    d += `L${(cx - cps[i].r * mmHeight).toFixed(2)} ${(top + cps[i].y * mmHeight).toFixed(2)} `;
   }
+  return d;
+}
+
+const SVG_MARGIN = 10;
+const SVG_GAP = 10;
+const SVG_LABEL_H = 9;
+
+/**
+ * Real-size (mm) SVG document with every variant in the current vessel set
+ * (plus "original"), laid out side by side on a shared baseline — same
+ * real-scale, real-shape data the PDF and STL exports use, in the one format
+ * that's directly usable as a cutting/tracing template or reusable as a
+ * source layer for other tools.
+ */
+export function buildSvgExport(
+  controlPoints: ControlPoint[],
+  heightCm: number,
+  vesselSet: VesselSetName,
+  adapt: AdaptMode,
+): { svg: string; filename: string } {
+  const mm = heightCm * 10;
+  const mR = Math.max(0.2, maxRadius(controlPoints));
+  const variants = resolveVariants(vesselSet, mR);
+
+  const shapes = variants.map((v) => {
+    const rc = remapProfile(controlPoints, v.w, v.h, adapt);
+    const mmHeight = mm * v.h;
+    const halfW = maxRadius(rc) * mmHeight;
+    return { v, rc, mmHeight, halfW };
+  });
+
+  const maxMmHeight = Math.max(...shapes.map((s) => s.mmHeight));
+  const top = SVG_MARGIN;
+  const baseline = top + maxMmHeight;
+  const height = baseline + SVG_LABEL_H + SVG_MARGIN;
+
+  let x = SVG_MARGIN;
+  let body = "";
+  for (const { v, rc, mmHeight, halfW } of shapes) {
+    const cx = x + halfW;
+    const shapeTop = baseline - mmHeight;
+    const d = svgProfilePath(rc, mmHeight, cx, shapeTop);
+    body +=
+      `<path d="${d}" fill="none" stroke="#000" stroke-width="0.5"/>` +
+      `<line x1="${cx.toFixed(2)}" y1="${shapeTop.toFixed(2)}" x2="${cx.toFixed(2)}" y2="${baseline.toFixed(2)}" stroke="#999" stroke-width="0.2" stroke-dasharray="2 3"/>` +
+      `<text x="${cx.toFixed(2)}" y="${(baseline + 6).toFixed(2)}" text-anchor="middle" font-family="sans-serif" font-size="4" fill="#333">${v.label}</text>`;
+    x += halfW * 2 + SVG_GAP;
+  }
+  const width = x - SVG_GAP + SVG_MARGIN;
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width.toFixed(1)}mm" height="${height.toFixed(1)}mm" viewBox="0 0 ${width.toFixed(1)} ${height.toFixed(1)}">` +
-    `<title>Line — profile, height ${heightCm} cm (units: mm)</title>` +
-    `<path d="${d}" fill="none" stroke="#000" stroke-width="0.5"/>` +
-    `<line x1="${cx}" y1="0" x2="${cx}" y2="${height}" stroke="#999" stroke-width="0.2" stroke-dasharray="2 3"/></svg>`;
+    `<title>Line — ${vesselSet} family, height ${heightCm} cm (units: mm)</title>` +
+    body +
+    `</svg>`;
 
-  return { svg, filename: `line-profile-${heightCm}cm.svg` };
+  return { svg, filename: `line-${vesselSet}-family-${heightCm}cm.svg` };
 }
