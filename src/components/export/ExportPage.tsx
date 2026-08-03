@@ -4,6 +4,7 @@ import { downloadSvgProfile } from "@/lib/export-svg";
 import { downloadFamilyPdf } from "@/lib/export-pdf";
 import { downloadRibsStl } from "@/lib/export-stl";
 import { ExportRow } from "@/components/export/ExportRow";
+import { FamilyBoard } from "@/components/family/FamilyBoard";
 
 export function ExportPage() {
   const controlPoints = useLineStore((s) => s.controlPoints);
@@ -16,6 +17,10 @@ export function ExportPage() {
       <div className="font-serif text-[22px] text-foreground">export</div>
       <div className="mb-5 mt-1 text-[11.5px] text-muted-foreground">
         everything leaves at real size — height set to {heightCm} cm
+      </div>
+
+      <div className="relative h-[260px] border-b border-border">
+        <FamilyBoard fixedLayout="organic" />
       </div>
 
       <ExportRow
