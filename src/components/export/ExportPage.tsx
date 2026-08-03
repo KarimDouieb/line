@@ -2,6 +2,7 @@ import { toast } from "sonner";
 import { useLineStore } from "@/store/line-store";
 import { downloadSvgProfile } from "@/lib/export-svg";
 import { downloadFamilyPdf } from "@/lib/export-pdf";
+import { downloadRibsStl } from "@/lib/export-stl";
 import { ExportRow } from "@/components/export/ExportRow";
 
 export function ExportPage() {
@@ -37,16 +38,12 @@ export function ExportPage() {
       />
       <ExportRow
         title="Turning ribs · 3D print"
-        description="printable ribs that carry this exact curve"
-        status="planned"
-        onAction={() => toast("turning ribs for 3D print — on the roadmap")}
-      />
-      <ExportRow
-        title="DXF · CAD"
-        description="for laser cutting & CAD refinement"
-        status="soon"
-        onAction={() => toast("DXF for CAD — coming soon")}
-        className="border-b"
+        description="one rib per shape, STL, ready to print"
+        status="active"
+        onAction={() => {
+          const ok = downloadRibsStl(controlPoints, heightCm, vesselSet, adapt);
+          toast(ok ? "STL saved — one rib per shape" : "draw a line first");
+        }}
       />
     </div>
   );
