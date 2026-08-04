@@ -244,6 +244,61 @@ function clampKeep(baseline: number, h: number): number {
 }
 
 /**
+ * Monotone cubic Hermite interpolation (Fritsch–Carlson) through `(xs[i],
+ * ys[i])`, evaluated at `x` — used to turn the "keep this end true, squeeze
+ * the rest" breakpoints below into a single smooth curve instead of straight
+ * segments joined at hard corners. A piecewise-*linear* version of that
+ * (the original approach) has a different slope on each side of every
+ * breakpoint whenever the kept region's clamped size differs from its
+ * baseline — which is exactly when `clampKeep` is doing something, i.e.
+ * whenever it matters. That slope jump doesn't move the breakpoint itself,
+ * but it does compress or expand the *spacing* between points on either side
+ * of it unevenly, which reads as a visible kink in the profile right at the
+ * neck/shoulder or waist/foot join — worse the smaller `h` is, since that's
+ * when the clamp pulls hardest. This still passes through every `(xs[i],
+ * ys[i])` exactly (so "keep this fraction true" still holds) and never
+ * overshoots between them (so the result stays monotonic whenever the inputs
+ * are, which they always are here), it just gets there without a corner.
+ */
+function monotoneCubicAt(xs: number[], ys: number[], x: number): number {
+  const n = xs.length;
+  const d: number[] = [];
+  for (let i = 0; i < n - 1; i++) d.push((ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]));
+  const m: number[] = new Array(n);
+  m[0] = d[0];
+  m[n - 1] = d[n - 2];
+  for (let i = 1; i < n - 1; i++) {
+    m[i] = d[i - 1] === 0 || d[i] === 0 || d[i - 1] > 0 !== d[i] > 0 ? 0 : (d[i - 1] + d[i]) / 2;
+  }
+  for (let i = 0; i < n - 1; i++) {
+    if (d[i] === 0) {
+      m[i] = 0;
+      m[i + 1] = 0;
+      continue;
+    }
+    const a = m[i] / d[i];
+    const b = m[i + 1] / d[i];
+    const s = a * a + b * b;
+    if (s > 9) {
+      const t = 3 / Math.sqrt(s);
+      m[i] *= t;
+      m[i + 1] *= t;
+    }
+  }
+  let i = 0;
+  while (i < n - 2 && x > xs[i + 1]) i++;
+  const seg = xs[i + 1] - xs[i];
+  const t = seg === 0 ? 0 : (x - xs[i]) / seg;
+  const t2 = t * t;
+  const t3 = t2 * t;
+  const h00 = 2 * t3 - 3 * t2 + 1;
+  const h10 = t3 - 2 * t2 + t;
+  const h01 = -2 * t3 + 3 * t2;
+  const h11 = t3 - t2;
+  return h00 * ys[i] + h10 * seg * m[i] + h01 * ys[i + 1] + h11 * seg * m[i + 1];
+}
+
+/**
  * Feature-preserving aspect remap: stretches a profile to target width/height
  * ratios `w`/`h` (relative to the original), while keeping the rim/foot
  * proportions recognizable per `mode` instead of naively squashing everything.
@@ -254,16 +309,14 @@ export function remapProfile(cps: ControlPoint[], w: number, h: number, mode: Ad
     let y = p.y;
     if (mode === "neck") {
       const keep = clampKeep(0.3, h);
-      y = p.y <= 0.3 ? p.y * (keep / 0.3) : keep + (p.y - 0.3) * ((1 - keep) / 0.7);
+      y = monotoneCubicAt([0, 0.3, 1], [0, keep, 1], p.y);
     } else if (mode === "foot") {
       const keep = clampKeep(0.22, h);
-      y = p.y >= 0.78 ? 1 - (1 - p.y) * (keep / 0.22) : p.y * ((1 - keep) / 0.78);
+      y = monotoneCubicAt([0, 0.78, 1], [0, 1 - keep, 1], p.y);
     } else if (mode === "ends") {
       const kt = clampKeep(0.26, h);
       const kb = clampKeep(0.18, h);
-      if (p.y <= 0.26) y = p.y * (kt / 0.26);
-      else if (p.y >= 0.82) y = 1 - (1 - p.y) * (kb / 0.18);
-      else y = kt + (p.y - 0.26) * ((1 - kt - kb) / 0.56);
+      y = monotoneCubicAt([0, 0.26, 0.82, 1], [0, kt, 1 - kb, 1], p.y);
     }
     const r = (p.r * w) / h;
     return { r: mode === "weight" ? r * massFactor(h) : r, y };
