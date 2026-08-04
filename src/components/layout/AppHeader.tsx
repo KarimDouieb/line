@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useLineStore } from "@/store/line-store";
 import type { PRESETS } from "@/lib/line-math";
+import { parseLineFile } from "@/lib/line-file";
 
 const TABS = [
   { to: "/draw", label: "draw" },
@@ -33,8 +34,23 @@ export function AppHeader() {
   const clear = useLineStore((s) => s.clear);
   const undo = useLineStore((s) => s.undo);
   const applyTemplate = useLineStore((s) => s.applyTemplate);
+  const loadLineFile = useLineStore((s) => s.loadLineFile);
   const curveMode = useLineStore((s) => s.curveMode);
   const setCurveMode = useLineStore((s) => s.setCurveMode);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // reset so re-selecting the same file still fires onChange
+    if (!file) return;
+    const data = parseLineFile(await file.text());
+    if (!data) {
+      toast("couldn't read that .line file");
+      return;
+    }
+    loadLineFile(data);
+    toast(`${file.name} loaded`);
+  };
 
   // Decoupled from the store so an in-progress edit (e.g. clearing the field
   // to retype) doesn't get clobbered by the "committed" value re-rendering it.
@@ -120,6 +136,16 @@ export function AppHeader() {
                   ))}
                 </div>
                 <DropdownMenuSeparator />
+                <div className="px-2 pb-1.5 pt-1 text-[10px] tracking-[0.1em] text-muted-foreground">IMPORT</div>
+                <div className="px-1.5 pb-1.5">
+                  <DropdownMenuItem
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-auto rounded-full border border-border px-2.5 py-1 text-xs hover:bg-secondary"
+                  >
+                    .line file…
+                  </DropdownMenuItem>
+                </div>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   disabled
                   className="flex items-baseline justify-between opacity-45"
@@ -132,6 +158,7 @@ export function AppHeader() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            <input ref={fileInputRef} type="file" accept=".line" className="hidden" onChange={handleImportFile} />
             <div className="mx-1 h-4 w-px bg-border" />
           </>
         )}

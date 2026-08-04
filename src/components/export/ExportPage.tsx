@@ -4,6 +4,7 @@ import { downloadSvgProfile } from "@/lib/export-svg";
 import { downloadFamilyPdf } from "@/lib/export-pdf";
 import { downloadRibsStl } from "@/lib/export-stl";
 import { ExportRow } from "@/components/export/ExportRow";
+import { SaveLineRow } from "@/components/export/SaveLineRow";
 import { FamilyBoard } from "@/components/family/FamilyBoard";
 
 export function ExportPage() {
@@ -23,6 +24,7 @@ export function ExportPage() {
         <FamilyBoard fixedLayout="organic" />
       </div>
 
+      <SaveLineRow />
       <ExportRow
         title="SVG profile"
         description="every shape, outline in mm — for templates & ribs"

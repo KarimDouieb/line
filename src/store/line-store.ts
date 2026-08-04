@@ -10,6 +10,7 @@ import {
   type PointKind,
   type VesselSetName,
 } from "@/lib/line-math";
+import type { LineFileData } from "@/lib/line-file";
 
 export type FamilyLayout = "overlap" | "grid" | "organic" | "echo" | "scene";
 export type CurveMode = "simple" | "advanced";
@@ -49,6 +50,8 @@ type LineStore = {
   /** Replace the whole profile — used once a freehand stroke has been fitted. */
   setControlPoints: (cps: ControlPoint[] | null) => void;
   applyTemplate: (name: keyof typeof PRESETS) => void;
+  /** Replaces the whole editable state (curve, height, family & variant) from an imported `.line` file. */
+  loadLineFile: (data: LineFileData) => void;
   clear: () => void;
   undo: () => void;
 
@@ -99,6 +102,17 @@ export const useLineStore = create<LineStore>((set, get) => ({
     get().snapshot();
     const nodes = controlPointsToNodes(PRESETS[name].map((p) => ({ ...p })));
     set({ nodes, controlPoints: densify(nodes) });
+  },
+
+  loadLineFile: (data) => {
+    get().snapshot();
+    set({
+      nodes: data.nodes,
+      controlPoints: densify(data.nodes),
+      heightCm: data.heightCm,
+      vesselSet: data.vesselSet,
+      adapt: data.adapt,
+    });
   },
 
   clear: () => {
