@@ -145,8 +145,8 @@ export function AppHeader() {
                     .line file…
                   </DropdownMenuItem>
                 </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
+                {/* <DropdownMenuSeparator /> */}
+                {/* <DropdownMenuItem
                   disabled
                   className="flex items-baseline justify-between opacity-45"
                   onClick={() => toast("photo → line — planned for a later study")}
@@ -155,7 +155,7 @@ export function AppHeader() {
                   <Badge variant="outline" className="rounded-full text-[10px]">
                     soon
                   </Badge>
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
               </DropdownMenuContent>
             </DropdownMenu>
             <input ref={fileInputRef} type="file" accept=".line" className="hidden" onChange={handleImportFile} />
