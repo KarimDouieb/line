@@ -169,7 +169,8 @@ export function InkCanvas() {
               .attr("height", sz)
               .attr("fill", "#fbf7ee")
               .attr("stroke", "#b4432e")
-              .attr("stroke-width", 1.4);
+              .attr("stroke-width", 1.4)
+              .style("cursor", "grab");
           });
         }
       }
@@ -183,7 +184,8 @@ export function InkCanvas() {
           .attr("cx", q.x)
           .attr("cy", q.y)
           .attr("r", isSelected ? 5.5 : 4.5)
-          .attr("fill", isSelected ? "#b4432e" : "rgba(38,34,25,.82)");
+          .attr("fill", isSelected ? "#b4432e" : "rgba(38,34,25,.82)")
+          .style("cursor", "grab");
       });
     }
   }, [size.width, size.height, controlPoints, nodes, heightCm, effectiveSelected]);
@@ -214,6 +216,7 @@ export function InkCanvas() {
         if (side) {
           store.snapshot();
           dragHandle.current = { index: effectiveSelected, side };
+          if (svgRef.current) svgRef.current.style.cursor = "grabbing";
           return;
         }
       }
@@ -222,6 +225,7 @@ export function InkCanvas() {
       if (hi >= 0) {
         store.snapshot();
         dragIndex.current = hi;
+        if (svgRef.current) svgRef.current.style.cursor = "grabbing";
         return;
       }
 
@@ -276,11 +280,13 @@ export function InkCanvas() {
   const onPointerUp = () => {
     if (dragHandle.current) {
       dragHandle.current = null;
+      if (svgRef.current) svgRef.current.style.cursor = "";
       return;
     }
     if (dragIndex.current !== null) {
       if (curveMode === "advanced") setSelectedNode(dragIndex.current);
       dragIndex.current = null;
+      if (svgRef.current) svgRef.current.style.cursor = "";
       return;
     }
     if (drawing.current) {
