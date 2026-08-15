@@ -140,6 +140,18 @@ export function InkCanvas() {
       const dense = controlPoints;
       const right = dense.map((p) => toCanvas(p, L));
       const left = dense.map((p) => toCanvas({ ...p, r: -p.r }, L));
+
+      const bottomPt = toCanvas(nodes.at(-1)!, L);
+      root
+        .append("line")
+        .attr("x1", L.cx)
+        .attr("x2", bottomPt.x)
+        .attr("y1", bottomPt.y)
+        .attr("y2", bottomPt.y)
+        .attr("stroke", "rgba(60,50,35,.32)")
+        .attr("stroke-width", 3)
+        .attr("stroke-linecap", "round");
+
       const strokeG = root.append("g");
       renderInkStroke(strokeG, left, { seed: 51, width: 3.2, opacity: 0.28 });
       renderInkStroke(strokeG, right, { seed: 9, width: 3.4, opacity: 1 });
