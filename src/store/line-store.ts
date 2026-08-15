@@ -18,6 +18,16 @@ export type CurveMode = "simple" | "advanced";
 const UNDO_LIMIT = 40;
 /** Bezier samples per segment for the derived dense profile — see densifyCurve. */
 const DENSIFY_RESOLUTION = 16;
+/**
+ * Dragging the rim or foot anchor rescales every other point's height to
+ * keep the profile normalized to 0..1 (see moveNode) — a nice way to reshape
+ * the whole curve from one end, but applying the cursor's raw position
+ * instantly made that rescale feel like a snap rather than a drag. Easing
+ * toward the cursor (a fraction of the remaining distance per pointermove)
+ * instead of jumping straight to it turns the same rescale into a smooth,
+ * springy follow.
+ */
+const ENDPOINT_DRAG_EASE = 0.05;
 
 function cloneNodes(nodes: CurveNode[] | null): CurveNode[] | null {
   if (!nodes) return null;
@@ -134,8 +144,11 @@ export const useLineStore = create<LineStore>((set, get) => ({
       const nodes = s.nodes.map((n) => ({ ...n }));
       const lo = i > 0 ? nodes[i - 1].y + 0.01 : -0.06;
       const hi = i < nodes.length - 1 ? nodes[i + 1].y - 0.01 : 1.06;
-      nodes[i] = { ...nodes[i], r: Math.min(1.4, next.r), y: Math.min(hi, Math.max(lo, next.y)) };
-      if (i === 0 || i === nodes.length - 1) {
+      const targetY = Math.min(hi, Math.max(lo, next.y));
+      const isEndpoint = i === 0 || i === nodes.length - 1;
+      const y = isEndpoint ? nodes[i].y + (targetY - nodes[i].y) * ENDPOINT_DRAG_EASE : targetY;
+      nodes[i] = { ...nodes[i], r: Math.min(1.4, next.r), y };
+      if (isEndpoint) {
         const y0 = nodes[0].y;
         const y1 = nodes.at(-1)!.y;
         const span = y1 - y0;
