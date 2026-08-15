@@ -10,7 +10,7 @@ export function FamilyPeek() {
   return (
     <>
       <div
-        className="absolute inset-x-0 bottom-0 z-10 h-[200px] transition-transform duration-[450ms] ease-[cubic-bezier(.2,.8,.2,1)]"
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[200px] transition-transform duration-[450ms] ease-[cubic-bezier(.2,.8,.2,1)]"
         style={{
           transform: visible ? "translateY(0%)" : "translateY(112%)",
           background: "linear-gradient(rgba(247,242,231,0), rgba(247,242,231,.94) 30%)",
