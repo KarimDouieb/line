@@ -1,6 +1,7 @@
 import { createRootRoute, Outlet } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { BuyMeACoffeeWidget } from "@/components/layout/BuyMeACoffeeWidget";
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -14,6 +15,7 @@ function RootComponent() {
         <Outlet />
       </div>
       <Toaster position="bottom-center" />
+      <BuyMeACoffeeWidget />
     </div>
   );
 }
