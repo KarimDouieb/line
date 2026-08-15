@@ -144,12 +144,12 @@ export function InkCanvas() {
       const bottomPt = toCanvas(nodes.at(-1)!, L);
       root
         .append("line")
-        .attr("x1", L.cx)
+        .attr("x1", L.cx - (bottomPt.x - L.cx))
         .attr("x2", bottomPt.x)
         .attr("y1", bottomPt.y)
         .attr("y2", bottomPt.y)
         .attr("stroke", "rgba(60,50,35,.32)")
-        .attr("stroke-width", 3)
+        .attr("stroke-width", 2.5)
         .attr("stroke-linecap", "round");
 
       const strokeG = root.append("g");
