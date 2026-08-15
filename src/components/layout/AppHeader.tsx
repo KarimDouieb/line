@@ -35,8 +35,6 @@ export function AppHeader() {
   const undo = useLineStore((s) => s.undo);
   const applyTemplate = useLineStore((s) => s.applyTemplate);
   const loadLineFile = useLineStore((s) => s.loadLineFile);
-  const curveMode = useLineStore((s) => s.curveMode);
-  const setCurveMode = useLineStore((s) => s.setCurveMode);
   const setReferenceImage = useReferenceImageStore((s) => s.setImage);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -112,14 +110,6 @@ export function AppHeader() {
             </Button>
             <Button variant="ghost" size="sm" className="rounded-full text-xs font-medium" onClick={() => undo()}>
               undo
-            </Button>
-            <Button
-              variant={curveMode === "advanced" ? "default" : "ghost"}
-              size="sm"
-              className="rounded-full text-xs font-medium"
-              onClick={() => setCurveMode(curveMode === "advanced" ? "simple" : "advanced")}
-            >
-              advanced
             </Button>
             <div className="mx-1 h-4 w-px bg-border" />
             <DropdownMenu>

@@ -8,42 +8,69 @@ const KINDS: { key: PointKind; title: string }[] = [
   { key: "free", title: "free — split, fully independent handles" },
 ];
 
+/**
+ * Anchor + tangent-handle pictograms — each depicts the actual shape the
+ * kind produces (a peak, a symmetric dome, a lopsided dome, a cusp), with
+ * the handles drawn as small squares and the anchor as a solid dot to match
+ * exactly how InkCanvas draws them on the curve itself (see the whisker
+ * `rect`s and anchor `circle`s there), rather than an abstract diagram.
+ */
 function PointIcon({ kind }: { kind: PointKind }) {
   switch (kind) {
     case "corner":
       return (
-        <svg viewBox="0 0 18 18" width="16" height="16">
-          <path d="M3 13 L9 4 L15 13" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+        <svg viewBox="0 0 26 18" width="22" height="15">
+          <path d="M13 4 L1 17 M13 4 L25 17" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+          <circle cx="13" cy="4" r="2.2" fill="currentColor" />
         </svg>
       );
     case "smooth":
       return (
-        <svg viewBox="0 0 18 18" width="16" height="16">
-          <line x1="9" y1="9" x2="4" y2="6" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
-          <line x1="9" y1="9" x2="14" y2="12" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
-          <circle cx="4" cy="6" r="1.3" fill="none" stroke="currentColor" strokeWidth="1.1" />
-          <circle cx="14" cy="12" r="1.3" fill="none" stroke="currentColor" strokeWidth="1.1" />
-          <circle cx="9" cy="9" r="1.7" fill="currentColor" />
+        <svg viewBox="0 0 24 18" width="22" height="15">
+          <path
+            d="M1.5 16.5 C1.6 8.6 5.2 4.6 12 4.5 C18.8 4.4 22.4 8.4 22.5 16.5"
+            fill="currentColor"
+            fillOpacity="0.12"
+            stroke="currentColor"
+            strokeWidth="1.4"
+          />
+          <line x1="1.5" y1="4.4" x2="22.5" y2="4.4" stroke="currentColor" strokeWidth="1" />
+          <rect x="0" y="3" width="3" height="3" fill="currentColor" />
+          <rect x="21" y="3" width="3" height="3" fill="currentColor" />
+          <circle cx="12" cy="4.5" r="2.2" fill="currentColor" />
         </svg>
       );
     case "asymmetric":
       return (
-        <svg viewBox="0 0 18 18" width="16" height="16">
-          <line x1="9" y1="9" x2="6.5" y2="7" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
-          <line x1="9" y1="9" x2="14.5" y2="13" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
-          <circle cx="6.5" cy="7" r="1.1" fill="none" stroke="currentColor" strokeWidth="1.1" />
-          <circle cx="14.5" cy="13" r="1.5" fill="none" stroke="currentColor" strokeWidth="1.1" />
-          <circle cx="9" cy="9" r="1.7" fill="currentColor" />
+        <svg viewBox="0 0 29 18" width="22" height="15">
+          <path
+            d="M1.5 16.5 C1.6 8.5 5.2 4.5 12 4.5 C20 4.5 24.9 8.5 26.8 16.5"
+            fill="currentColor"
+            fillOpacity="0.12"
+            stroke="currentColor"
+            strokeWidth="1.4"
+          />
+          <line x1="1.5" y1="4.4" x2="27.5" y2="4.4" stroke="currentColor" strokeWidth="1" />
+          <rect x="0" y="3" width="3" height="3" fill="currentColor" />
+          <rect x="25.5" y="3" width="3" height="3" fill="currentColor" />
+          <circle cx="12" cy="4.5" r="2.2" fill="currentColor" />
         </svg>
       );
     case "free":
       return (
-        <svg viewBox="0 0 18 18" width="16" height="16">
-          <line x1="9" y1="9" x2="4" y2="11" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
-          <line x1="9" y1="9" x2="14.5" y2="4.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
-          <circle cx="4" cy="11" r="1.3" fill="none" stroke="currentColor" strokeWidth="1.1" />
-          <circle cx="14.5" cy="4.5" r="1.3" fill="none" stroke="currentColor" strokeWidth="1.1" />
-          <circle cx="9" cy="9" r="1.7" fill="currentColor" />
+        <svg viewBox="0 0 27 18" width="22" height="15">
+          <path
+            d="M1.5 16.5 C1.6 8.5 5.2 4.5 12 4.5 C18.2 8.5 23.1 12.5 26.8 16.5"
+            fill="currentColor"
+            fillOpacity="0.12"
+            stroke="currentColor"
+            strokeWidth="1.4"
+          />
+          <line x1="1.5" y1="4.4" x2="12" y2="4.4" stroke="currentColor" strokeWidth="1" />
+          <line x1="21.5" y1="11.4" x2="12" y2="4.4" stroke="currentColor" strokeWidth="1" />
+          <rect x="0" y="3" width="3" height="3" fill="currentColor" />
+          <rect x="19" y="9" width="3" height="3" fill="currentColor" transform="rotate(41 20.5 10.5)" />
+          <circle cx="12" cy="4.5" r="2.2" fill="currentColor" />
         </svg>
       );
   }
@@ -57,7 +84,7 @@ function PointIcon({ kind }: { kind: PointKind }) {
  */
 export function PointTypeToolbar({ kind, onPick }: { kind: PointKind; onPick: (kind: PointKind) => void }) {
   return (
-    <div className="pointer-events-auto absolute left-6 top-4 z-20 rounded-lg border border-border bg-card/95 px-2.5 py-2 shadow-md">
+    <div className="pointer-events-auto absolute left-6 top-16 z-20 rounded-lg border border-border bg-card/95 px-2.5 py-2 shadow-md">
       <div className="mb-1.5 text-[10px] font-medium tracking-[0.14em] text-muted-foreground">POINT TYPE</div>
       <div className="flex gap-1">
         {KINDS.map((k) => (

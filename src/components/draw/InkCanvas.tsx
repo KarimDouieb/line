@@ -6,6 +6,7 @@ import { fitStrokeToProfile, maxRadius, resolveHandle, type ControlPoint, type C
 import { renderInkStroke } from "@/lib/ink-style";
 import { useElementSize } from "@/hooks/use-element-size";
 import { PointTypeToolbar } from "@/components/draw/PointTypeToolbar";
+import { CurveModeSwitch } from "@/components/draw/CurveModeSwitch";
 import { ReferenceImageLayer } from "@/components/draw/ReferenceImageLayer";
 
 type Layout = { cx: number; topY: number; Hpx: number };
@@ -347,6 +348,7 @@ export function InkCanvas() {
         onPointerCancel={onPointerUp}
         onDoubleClick={onDoubleClick}
       />
+      <CurveModeSwitch />
       {effectiveSelected !== null && nodes && (
         <PointTypeToolbar
           kind={nodes[effectiveSelected].kind}
