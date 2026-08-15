@@ -3,7 +3,6 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLineStore } from "@/store/line-store";
+import { useReferenceImageStore } from "@/store/reference-image-store";
 import type { PRESETS } from "@/lib/line-math";
 import { parseLineFile } from "@/lib/line-file";
 
@@ -37,7 +37,9 @@ export function AppHeader() {
   const loadLineFile = useLineStore((s) => s.loadLineFile);
   const curveMode = useLineStore((s) => s.curveMode);
   const setCurveMode = useLineStore((s) => s.setCurveMode);
+  const setReferenceImage = useReferenceImageStore((s) => s.setImage);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -50,6 +52,23 @@ export function AppHeader() {
     }
     loadLineFile(data);
     toast(`${file.name} loaded`);
+  };
+
+  const handleImportImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      setReferenceImage(url, img.naturalWidth, img.naturalHeight);
+      toast("photo loaded — drag to position, use the corner handle to scale & rotate");
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      toast("couldn't load that image");
+    };
+    img.src = url;
   };
 
   // Decoupled from the store so an in-progress edit (e.g. clearing the field
@@ -136,6 +155,18 @@ export function AppHeader() {
                   ))}
                 </div>
                 <DropdownMenuSeparator />
+                <div className="px-2 pb-1.5 pt-1 text-[10px] tracking-[0.1em] text-muted-foreground">
+                  TRACE FROM PHOTO
+                </div>
+                <div className="px-1.5 pb-1.5">
+                  <DropdownMenuItem
+                    onClick={() => imageInputRef.current?.click()}
+                    className="w-auto rounded-full border border-border px-2.5 py-1 text-xs hover:bg-secondary"
+                  >
+                    upload a photo…
+                  </DropdownMenuItem>
+                </div>
+                <DropdownMenuSeparator />
                 <div className="px-2 pb-1.5 pt-1 text-[10px] tracking-[0.1em] text-muted-foreground">IMPORT</div>
                 <div className="px-1.5 pb-1.5">
                   <DropdownMenuItem
@@ -145,20 +176,16 @@ export function AppHeader() {
                     .line file…
                   </DropdownMenuItem>
                 </div>
-                {/* <DropdownMenuSeparator /> */}
-                {/* <DropdownMenuItem
-                  disabled
-                  className="flex items-baseline justify-between opacity-45"
-                  onClick={() => toast("photo → line — planned for a later study")}
-                >
-                  <span>photo → line</span>
-                  <Badge variant="outline" className="rounded-full text-[10px]">
-                    soon
-                  </Badge>
-                </DropdownMenuItem> */}
               </DropdownMenuContent>
             </DropdownMenu>
             <input ref={fileInputRef} type="file" accept=".line" className="hidden" onChange={handleImportFile} />
+            <input
+              ref={imageInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImportImage}
+            />
             <div className="mx-1 h-4 w-px bg-border" />
           </>
         )}

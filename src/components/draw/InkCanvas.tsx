@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { select } from "d3";
 import { useLineStore } from "@/store/line-store";
+import { useReferenceImageStore } from "@/store/reference-image-store";
 import { fitStrokeToProfile, maxRadius, resolveHandle, type ControlPoint, type CurveNode } from "@/lib/line-math";
 import { renderInkStroke } from "@/lib/ink-style";
 import { useElementSize } from "@/hooks/use-element-size";
 import { PointTypeToolbar } from "@/components/draw/PointTypeToolbar";
+import { ReferenceImageLayer } from "@/components/draw/ReferenceImageLayer";
 
 type Layout = { cx: number; topY: number; Hpx: number };
 type RawPoint = { x: number; y: number };
@@ -60,6 +62,7 @@ export function InkCanvas() {
   const controlPoints = useLineStore((s) => s.controlPoints);
   const heightCm = useLineStore((s) => s.heightCm);
   const curveMode = useLineStore((s) => s.curveMode);
+  const adjustingReference = useReferenceImageStore((s) => s.adjusting && s.url !== null);
 
   const [selectedNode, setSelectedNode] = useState<number | null>(null);
   const effectiveSelected =
@@ -313,11 +316,13 @@ export function InkCanvas() {
 
   return (
     <div ref={containerRef} className="absolute inset-0">
+      <ReferenceImageLayer width={size.width} height={size.height} />
       <svg
         ref={svgRef}
         width={size.width}
         height={size.height}
         className="block touch-none"
+        style={adjustingReference ? { pointerEvents: "none" } : undefined}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
