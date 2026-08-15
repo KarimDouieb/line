@@ -82,7 +82,7 @@ type LineStore = {
   toggleFamilyVisible: () => void;
 };
 
-const initialNodes = controlPointsToNodes(PRESETS.vase.map((p) => ({ ...p })));
+const initialNodes = controlPointsToNodes(PRESETS.bowl.map((p) => ({ ...p })));
 
 export const useLineStore = create<LineStore>((set, get) => ({
   nodes: initialNodes,
