@@ -40,7 +40,7 @@ function Section<T extends string>({
   return (
     <div>
       <div className="px-1 pb-1.5 pt-4 text-[10px] font-medium tracking-[0.16em] text-muted-foreground">{title}</div>
-      {items.map((it) => (
+      <div className="ml-3">{items.map((it) => (
         <button
           key={it.key}
           onClick={() => onPick(it.key)}
@@ -53,6 +53,7 @@ function Section<T extends string>({
           <span className="text-[10.5px] text-muted-foreground">{it.desc}</span>
         </button>
       ))}
+      </div>
     </div>
   );
 }

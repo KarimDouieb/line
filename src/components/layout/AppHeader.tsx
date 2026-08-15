@@ -21,6 +21,7 @@ const TABS = [
   { to: "/draw", label: "draw" },
   { to: "/family", label: "family" },
   { to: "/export", label: "export" },
+  { to: "/about", label: "about" },
 ] as const;
 
 const TEMPLATES: (keyof typeof PRESETS)[] = ["bowl", "cup", "vase", "bottle"];

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as FamilyRouteImport } from './routes/family'
 import { Route as ExportRouteImport } from './routes/export'
 import { Route as DrawRouteImport } from './routes/draw'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 
 const FamilyRoute = FamilyRouteImport.update({
@@ -29,6 +30,11 @@ const DrawRoute = DrawRouteImport.update({
   path: '/draw',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -37,12 +43,14 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/draw': typeof DrawRoute
   '/export': typeof ExportRoute
   '/family': typeof FamilyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/draw': typeof DrawRoute
   '/export': typeof ExportRoute
   '/family': typeof FamilyRoute
@@ -50,20 +58,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/draw': typeof DrawRoute
   '/export': typeof ExportRoute
   '/family': typeof FamilyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/draw' | '/export' | '/family'
+  fullPaths: '/' | '/about' | '/draw' | '/export' | '/family'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/draw' | '/export' | '/family'
-  id: '__root__' | '/' | '/draw' | '/export' | '/family'
+  to: '/' | '/about' | '/draw' | '/export' | '/family'
+  id: '__root__' | '/' | '/about' | '/draw' | '/export' | '/family'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
   DrawRoute: typeof DrawRoute
   ExportRoute: typeof ExportRoute
   FamilyRoute: typeof FamilyRoute
@@ -92,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DrawRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -104,6 +121,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
   DrawRoute: DrawRoute,
   ExportRoute: ExportRoute,
   FamilyRoute: FamilyRoute,
