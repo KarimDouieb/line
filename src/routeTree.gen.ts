@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as FamilyRouteImport } from './routes/family'
 import { Route as ExportRouteImport } from './routes/export'
 import { Route as DrawRouteImport } from './routes/draw'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 
+const GalleryRoute = GalleryRouteImport.update({
+  id: '/gallery',
+  path: '/gallery',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FamilyRoute = FamilyRouteImport.update({
   id: '/family',
   path: '/family',
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/draw': typeof DrawRoute
   '/export': typeof ExportRoute
   '/family': typeof FamilyRoute
+  '/gallery': typeof GalleryRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/draw': typeof DrawRoute
   '/export': typeof ExportRoute
   '/family': typeof FamilyRoute
+  '/gallery': typeof GalleryRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +70,14 @@ export interface FileRoutesById {
   '/draw': typeof DrawRoute
   '/export': typeof ExportRoute
   '/family': typeof FamilyRoute
+  '/gallery': typeof GalleryRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/draw' | '/export' | '/family'
+  fullPaths: '/' | '/about' | '/draw' | '/export' | '/family' | '/gallery'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/draw' | '/export' | '/family'
-  id: '__root__' | '/' | '/about' | '/draw' | '/export' | '/family'
+  to: '/' | '/about' | '/draw' | '/export' | '/family' | '/gallery'
+  id: '__root__' | '/' | '/about' | '/draw' | '/export' | '/family' | '/gallery'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,10 +86,18 @@ export interface RootRouteChildren {
   DrawRoute: typeof DrawRoute
   ExportRoute: typeof ExportRoute
   FamilyRoute: typeof FamilyRoute
+  GalleryRoute: typeof GalleryRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/gallery': {
+      id: '/gallery'
+      path: '/gallery'
+      fullPath: '/gallery'
+      preLoaderRoute: typeof GalleryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/family': {
       id: '/family'
       path: '/family'
@@ -125,6 +142,7 @@ const rootRouteChildren: RootRouteChildren = {
   DrawRoute: DrawRoute,
   ExportRoute: ExportRoute,
   FamilyRoute: FamilyRoute,
+  GalleryRoute: GalleryRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

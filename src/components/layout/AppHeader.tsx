@@ -14,8 +14,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useLineStore } from "@/store/line-store";
 import { useReferenceImageStore } from "@/store/reference-image-store";
+import { useAuthStore } from "@/store/auth-store";
 import type { PRESETS } from "@/lib/line-math";
 import { parseLineFile } from "@/lib/line-file";
+import { UserMenu } from "@/components/layout/UserMenu";
 
 const TABS = [
   { to: "/draw", label: "draw" },
@@ -24,11 +26,17 @@ const TABS = [
   { to: "/about", label: "about" },
 ] as const;
 
+const GALLERY_TAB = { to: "/gallery", label: "gallery" } as const;
+
 const TEMPLATES: (keyof typeof PRESETS)[] = ["bowl", "cup", "vase", "bottle"];
 
 export function AppHeader() {
   const pathname = useLocation({ select: (l) => l.pathname });
   const onDraw = pathname === "/draw";
+  const isAuthed = useAuthStore((s) => s.status === "authenticated");
+  const tabs = isAuthed
+    ? [...TABS.slice(0, 3), GALLERY_TAB, ...TABS.slice(3)]
+    : TABS;
 
   const heightCm = useLineStore((s) => s.heightCm);
   const setHeightCm = useLineStore((s) => s.setHeightCm);
@@ -91,7 +99,7 @@ export function AppHeader() {
       </div>
 
       <nav className="flex justify-center gap-2">
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <Link
             key={tab.to}
             to={tab.to}
@@ -187,6 +195,8 @@ export function AppHeader() {
           className="h-auto w-10 rounded-none border-0 border-b border-input bg-transparent p-0 text-center text-xs font-medium shadow-none focus-visible:ring-0"
         />
         <span className="text-[11px] text-muted-foreground">cm</span>
+        <div className="mx-1 h-4 w-px bg-border" />
+        <UserMenu />
       </div>
     </header>
   );

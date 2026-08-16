@@ -13,13 +13,14 @@ export function SaveLineRow() {
   const heightCm = useLineStore((s) => s.heightCm);
   const vesselSet = useLineStore((s) => s.vesselSet);
   const adapt = useLineStore((s) => s.adapt);
+  const layout = useLineStore((s) => s.layout);
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const disabled = !nodes || nodes.length < 2;
 
   const save = () => {
-    const ok = nodes && downloadLineFile({ nodes, heightCm, vesselSet, adapt }, name || "line");
+    const ok = nodes && downloadLineFile({ nodes, heightCm, vesselSet, adapt, layout }, name || "line");
     toast(ok ? "saved — .line file" : "draw a line first");
     setOpen(false);
     setName("");

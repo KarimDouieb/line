@@ -7,12 +7,13 @@ import {
   type AdaptMode,
   type ControlPoint,
   type CurveNode,
+  type FamilyLayout,
   type PointKind,
   type VesselSetName,
 } from "@/lib/line-math";
 import type { LineFileData } from "@/lib/line-file";
 
-export type FamilyLayout = "overlap" | "grid" | "organic" | "echo" | "scene";
+export type { FamilyLayout } from "@/lib/line-math";
 export type CurveMode = "simple" | "advanced";
 
 const UNDO_LIMIT = 40;
@@ -122,6 +123,7 @@ export const useLineStore = create<LineStore>((set, get) => ({
       heightCm: data.heightCm,
       vesselSet: data.vesselSet,
       adapt: data.adapt,
+      layout: data.layout,
     });
   },
 

@@ -18,6 +18,7 @@ export type ControlPoint = { r: number; y: number };
 export type RawPoint = { x: number; y: number };
 export type AdaptMode = "uniform" | "neck" | "foot" | "ends" | "weight" | "flare";
 export type VesselSetName = "studio" | "classical" | "cafe" | "ikebana";
+export type FamilyLayout = "overlap" | "grid" | "organic" | "echo" | "scene";
 
 export type Variant = { label: string; w: number; h: number };
 

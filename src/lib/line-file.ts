@@ -5,16 +5,18 @@
  * else in the app (dense profile, PDF/STL/SVG exports) is derived from this,
  * so a `.line` file is a complete, reopenable save — not just one output.
  */
-import type { AdaptMode, CurveNode, Handle, PointKind, VesselSetName } from "@/lib/line-math";
+import type { AdaptMode, CurveNode, FamilyLayout, Handle, PointKind, VesselSetName } from "@/lib/line-math";
 
 const POINT_KINDS: PointKind[] = ["corner", "smooth", "asymmetric", "free"];
 const VESSEL_SETS: VesselSetName[] = ["studio", "classical", "cafe", "ikebana"];
 const ADAPT_MODES: AdaptMode[] = ["uniform", "neck", "foot", "ends", "weight", "flare"];
+const FAMILY_LAYOUTS: FamilyLayout[] = ["overlap", "grid", "organic", "echo", "scene"];
 
 export type LineFileData = {
   heightCm: number;
   vesselSet: VesselSetName;
   adapt: AdaptMode;
+  layout: FamilyLayout;
   nodes: CurveNode[];
 };
 
@@ -53,6 +55,8 @@ export function parseLineFile(text: string): LineFileData | null {
     heightCm: typeof d.heightCm === "number" && d.heightCm > 0 ? d.heightCm : 18,
     vesselSet: VESSEL_SETS.includes(d.vesselSet as VesselSetName) ? (d.vesselSet as VesselSetName) : "studio",
     adapt: ADAPT_MODES.includes(d.adapt as AdaptMode) ? (d.adapt as AdaptMode) : "uniform",
+    // Older `.line` files (and gallery entries saved before this field existed) won't have it.
+    layout: FAMILY_LAYOUTS.includes(d.layout as FamilyLayout) ? (d.layout as FamilyLayout) : "overlap",
     nodes,
   };
 }
