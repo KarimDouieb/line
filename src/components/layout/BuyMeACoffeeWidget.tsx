@@ -50,12 +50,21 @@ export function BuyMeACoffeeWidget() {
   useEffect(() => {
     const visible = VISIBLE_PATHS.has(pathname);
     const apply = () => {
-      const btn = document.getElementById("bmc-wbtn");
       // The vendor script sets its own inline `display: flex` (for centering
       // the icon) when it creates this button — clearing back to "" instead
       // of restoring "flex" would fall through to a bare <div>'s default
       // `block`, breaking that centering.
+      const btn = document.getElementById("bmc-wbtn");
       if (btn) btn.style.display = visible ? "flex" : "none";
+
+      // The auto-popup message bubble (data-message) is a completely
+      // separate element from the button, created and shown on its own
+      // timer regardless of the button's visibility — it needs the same
+      // route gating or it shows up everywhere, including mid-draw.
+      const iframe = document.getElementById("bmc-iframe");
+      if (iframe) iframe.style.display = visible ? "block" : "none";
+      const closeBtn = document.getElementById("bmc-close-btn");
+      if (closeBtn) closeBtn.style.display = visible ? "flex" : "none";
     };
     apply();
     // The button is created asynchronously (script load -> dispatch -> DOM
