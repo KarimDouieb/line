@@ -94,7 +94,7 @@ export const useLineStore = create<LineStore>((set, get) => ({
   vesselSet: "studio",
   adapt: "uniform",
   familyVisible: true,
-  curveMode: "simple",
+  curveMode: "advanced",
 
   snapshot: () =>
     set((s) => {

@@ -25,7 +25,7 @@ export function ExportPage() {
         <FamilyBoard fixedLayout="organic" />
       </div>
 
-      <SaveLineRow />
+      {/* <SaveLineRow /> */}
       <SaveToGalleryRow />
       <ExportRow
         title="SVG profile"

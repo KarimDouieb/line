@@ -165,7 +165,7 @@ export function AppHeader() {
                     upload a photo…
                   </DropdownMenuItem>
                 </div>
-                <DropdownMenuSeparator />
+                {/* <DropdownMenuSeparator />
                 <div className="px-2 pb-1.5 pt-1 text-[10px] tracking-[0.1em] text-muted-foreground">IMPORT</div>
                 <div className="px-1.5 pb-1.5">
                   <DropdownMenuItem
@@ -174,7 +174,7 @@ export function AppHeader() {
                   >
                     .line file…
                   </DropdownMenuItem>
-                </div>
+                </div> */}
               </DropdownMenuContent>
             </DropdownMenu>
             <input ref={fileInputRef} type="file" accept=".line" className="hidden" onChange={handleImportFile} />

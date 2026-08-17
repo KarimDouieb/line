@@ -348,7 +348,7 @@ export function InkCanvas() {
         onPointerCancel={onPointerUp}
         onDoubleClick={onDoubleClick}
       />
-      <CurveModeSwitch />
+      {/* <CurveModeSwitch /> */}
       {effectiveSelected !== null && nodes && (
         <PointTypeToolbar
           kind={nodes[effectiveSelected].kind}
