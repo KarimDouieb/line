@@ -84,7 +84,7 @@ function PointIcon({ kind }: { kind: PointKind }) {
  */
 export function PointTypeToolbar({ kind, onPick }: { kind: PointKind; onPick: (kind: PointKind) => void }) {
   return (
-    <div className="pointer-events-auto absolute left-6 top-16 z-20 rounded-lg border border-border bg-card/95 px-2.5 py-2 shadow-md">
+    <div className="pointer-events-auto absolute left-6 top-4 z-20 rounded-lg border border-border bg-card/95 px-2.5 py-2 shadow-md">
       <div className="mb-1.5 text-[10px] font-medium tracking-[0.14em] text-muted-foreground">POINT TYPE</div>
       <div className="flex gap-1">
         {KINDS.map((k) => (

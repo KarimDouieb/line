@@ -40,8 +40,6 @@ export function AppHeader() {
 
   const heightCm = useLineStore((s) => s.heightCm);
   const setHeightCm = useLineStore((s) => s.setHeightCm);
-  const clear = useLineStore((s) => s.clear);
-  const undo = useLineStore((s) => s.undo);
   const applyTemplate = useLineStore((s) => s.applyTemplate);
   const loadLineFile = useLineStore((s) => s.loadLineFile);
   const setReferenceImage = useReferenceImageStore((s) => s.setImage);
@@ -95,7 +93,7 @@ export function AppHeader() {
       <div className="flex items-center gap-2.5">
         <span className="font-serif text-[22px] font-medium text-foreground">Line</span>
         <span className="font-serif text-xl text-foreground/50">線</span>
-        <span className="size-1.5 rounded-full bg-accent" />
+        <span className="h-[3px] w-3.5 rounded-full bg-accent" />
       </div>
 
       <nav className="flex justify-center gap-2">
@@ -114,13 +112,6 @@ export function AppHeader() {
       <div className="flex items-center justify-end gap-1.5">
         {onDraw && (
           <>
-            <Button variant="ghost" size="sm" className="rounded-full text-xs font-medium" onClick={() => clear()}>
-              new line
-            </Button>
-            <Button variant="ghost" size="sm" className="rounded-full text-xs font-medium" onClick={() => undo()}>
-              undo
-            </Button>
-            <div className="mx-1 h-4 w-px bg-border" />
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={

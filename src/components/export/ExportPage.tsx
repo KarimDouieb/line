@@ -4,7 +4,6 @@ import { downloadSvgProfile } from "@/lib/export-svg";
 import { downloadFamilyPdf } from "@/lib/export-pdf";
 import { downloadRibsStl } from "@/lib/export-stl";
 import { ExportRow } from "@/components/export/ExportRow";
-import { SaveLineRow } from "@/components/export/SaveLineRow";
 import { SaveToGalleryRow } from "@/components/export/SaveToGalleryRow";
 import { FamilyBoard } from "@/components/family/FamilyBoard";
 

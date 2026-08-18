@@ -10,10 +10,10 @@ const SOCIALS = [
 export function AboutPage() {
   return (
     <div className="mx-auto mt-16 max-w-[560px] px-6 pb-24">
-      <div className="mb-12 flex items-baseline gap-3">
+      <div className="mb-12 flex items-center gap-3">
         <span className="font-serif text-[44px] font-medium leading-none text-foreground">Line</span>
-        <span className="font-serif text-2xl leading-none text-foreground/45">線</span>
-        <span className="size-1.5 rounded-full bg-accent" />
+        <span className="font-serif text-4xl leading-none text-foreground/45">線</span>
+        <span className="h-[3px] w-6 rounded-full bg-accent" />
       </div>
 
       <div className="space-y-5 font-serif text-[19px] leading-[1.7] text-foreground/90">

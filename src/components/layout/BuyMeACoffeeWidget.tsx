@@ -44,36 +44,57 @@ function loadWidgetOnce() {
 /** Mount once at the app root — shows the floating button only on About/Export, everywhere else it's hidden (not unmounted). */
 export function BuyMeACoffeeWidget() {
   const pathname = useLocation({ select: (l) => l.pathname });
+  const visiblePath = VISIBLE_PATHS.has(pathname);
 
-  useEffect(loadWidgetOnce, []);
+  // Only ever load the vendor script once the user has actually reached an
+  // eligible page — not unconditionally at app mount. The auto-popup fires
+  // once, on its own internal timer, the moment the script finishes loading;
+  // loading it immediately on every app visit (most of which land on /draw)
+  // meant that timer could fire before the route-based hide below had even
+  // run once, showing the popup on /draw regardless of any hiding logic.
+  // Loading only on an eligible route means that one-shot timer only ever
+  // fires while it's actually supposed to be visible.
+  useEffect(() => {
+    if (visiblePath) loadWidgetOnce();
+  }, [visiblePath]);
 
   useEffect(() => {
-    const visible = VISIBLE_PATHS.has(pathname);
+    const visible = visiblePath;
+    // Setting .style.display is itself a style-attribute mutation, and the
+    // observer below watches exactly that — writing unconditionally would
+    // have it retrigger itself on every application, forever. Only writing
+    // when the value actually needs to change keeps it a no-op once applied,
+    // while still reacting the one time the vendor script changes it back.
+    const set = (el: HTMLElement | null, want: string) => {
+      if (el && el.style.display !== want) el.style.display = want;
+    };
     const apply = () => {
       // The vendor script sets its own inline `display: flex` (for centering
       // the icon) when it creates this button — clearing back to "" instead
       // of restoring "flex" would fall through to a bare <div>'s default
       // `block`, breaking that centering.
-      const btn = document.getElementById("bmc-wbtn");
-      if (btn) btn.style.display = visible ? "flex" : "none";
+      set(document.getElementById("bmc-wbtn"), visible ? "flex" : "none");
 
       // The auto-popup message bubble (data-message) is a completely
       // separate element from the button, created and shown on its own
       // timer regardless of the button's visibility — it needs the same
       // route gating or it shows up everywhere, including mid-draw.
-      const iframe = document.getElementById("bmc-iframe");
-      if (iframe) iframe.style.display = visible ? "block" : "none";
-      const closeBtn = document.getElementById("bmc-close-btn");
-      if (closeBtn) closeBtn.style.display = visible ? "flex" : "none";
+      set(document.getElementById("bmc-iframe"), visible ? "block" : "none");
+      set(document.getElementById("bmc-close-btn"), visible ? "flex" : "none");
     };
     apply();
     // The button is created asynchronously (script load -> dispatch -> DOM
     // insert), so on the very first render it may not exist yet — watch for
-    // it instead of guessing a timeout.
+    // it instead of guessing a timeout. The popup also auto-reveals itself
+    // on its own internal timer well after creation, by flipping its own
+    // inline `style.display` back to visible — a plain attribute mutation,
+    // not a childList one — so that has to be watched too, or it silently
+    // wins the race against `apply()` a second or two after this effect
+    // already ran once.
     const observer = new MutationObserver(apply);
-    observer.observe(document.body, { childList: true });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style"] });
     return () => observer.disconnect();
-  }, [pathname]);
+  }, [visiblePath]);
 
   return null;
 }
