@@ -20,8 +20,18 @@ export type LineFileData = {
   nodes: CurveNode[];
 };
 
+/**
+ * Destructures into a fixed field order before stringifying rather than
+ * spreading `data` as-is — two callers can build an otherwise-identical
+ * `LineFileData` object with fields in a different literal order, and
+ * `JSON.stringify` preserves insertion order, so a naive spread would
+ * serialize them differently. That mismatch is exactly what the gallery's
+ * dirty-check (comparing this output against a stored snapshot) depends on
+ * being consistent — see selectIsGalleryDirty in line-store.ts.
+ */
 export function serializeLineFile(data: LineFileData): string {
-  return JSON.stringify({ type: "line-file", version: 1, ...data }, null, 2);
+  const { heightCm, vesselSet, adapt, layout, nodes } = data;
+  return JSON.stringify({ type: "line-file", version: 1, heightCm, vesselSet, adapt, layout, nodes }, null, 2);
 }
 
 function readHandle(v: unknown): Handle {

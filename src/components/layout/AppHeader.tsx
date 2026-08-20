@@ -18,6 +18,7 @@ import { useAuthStore } from "@/store/auth-store";
 import type { PRESETS } from "@/lib/line-math";
 import { parseLineFile } from "@/lib/line-file";
 import { UserMenu } from "@/components/layout/UserMenu";
+import { OpenGalleryBar } from "@/components/layout/OpenGalleryBar";
 
 const TABS = [
   { to: "/draw", label: "draw" },
@@ -33,6 +34,7 @@ const TEMPLATES: (keyof typeof PRESETS)[] = ["bowl", "cup", "vase", "bottle"];
 export function AppHeader() {
   const pathname = useLocation({ select: (l) => l.pathname });
   const onDraw = pathname === "/draw";
+  const onFamily = pathname === "/family";
   const isAuthed = useAuthStore((s) => s.status === "authenticated");
   const tabs = isAuthed
     ? [...TABS.slice(0, 3), GALLERY_TAB, ...TABS.slice(3)]
@@ -94,6 +96,7 @@ export function AppHeader() {
         <span className="font-serif text-[22px] font-medium text-foreground">Line</span>
         <span className="font-serif text-xl text-foreground/50">線</span>
         <span className="h-[3px] w-3.5 rounded-full bg-accent" />
+        {(onDraw || onFamily) && <OpenGalleryBar />}
       </div>
 
       <nav className="flex justify-center gap-2">

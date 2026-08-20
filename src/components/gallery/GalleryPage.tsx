@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { listGallery, type GalleryItem } from "@/lib/gallery-client";
+import { listGallery, renameGalleryItem, type GalleryItem } from "@/lib/gallery-client";
 import { useLineStore } from "@/store/line-store";
+import { serializeLineFile } from "@/lib/line-file";
 import { GalleryThumbnail } from "@/components/gallery/GalleryThumbnail";
+import { EditableName } from "@/components/ui/editable-name";
 
 export function GalleryPage() {
   const [items, setItems] = useState<GalleryItem[] | null>(null);
   const loadLineFile = useLineStore((s) => s.loadLineFile);
+  const openGallery = useLineStore((s) => s.openGallery);
+  const setOpenGallery = useLineStore((s) => s.setOpenGallery);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,7 +25,21 @@ export function GalleryPage() {
 
   const open = (item: GalleryItem) => {
     loadLineFile(item.data);
-    navigate({ to: "/draw" });
+    setOpenGallery({ id: item.id, name: item.name, snapshot: serializeLineFile(item.data) });
+    navigate({ to: "/draw", search: { id: item.id, name: item.name } });
+  };
+
+  const rename = async (item: GalleryItem, name: string) => {
+    setItems((prev) => prev?.map((it) => (it.id === item.id ? { ...it, name } : it)) ?? prev);
+    // Keep the header's name in sync too, in case this is the line currently open elsewhere.
+    if (openGallery?.id === item.id) setOpenGallery({ ...openGallery, name });
+    try {
+      await renameGalleryItem(item.id, name);
+    } catch {
+      toast("couldn't rename — try again");
+      setItems((prev) => prev?.map((it) => (it.id === item.id ? { ...it, name: item.name } : it)) ?? prev);
+      if (openGallery?.id === item.id) setOpenGallery({ ...openGallery, name: item.name });
+    }
   };
 
   return (
@@ -40,12 +58,21 @@ export function GalleryPage() {
 
       <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4">
         {items?.map((item) => (
-          <button key={item.id} onClick={() => open(item)} className="group flex flex-col gap-2 text-left">
-            <div className="relative aspect-square overflow-hidden rounded-lg border border-border bg-card transition-colors group-hover:border-accent/50">
+          <div key={item.id} className="group flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => open(item)}
+              className="relative aspect-square cursor-pointer overflow-hidden rounded-lg border border-border bg-card text-left transition-colors group-hover:border-accent/50"
+            >
               <GalleryThumbnail data={item.data} />
-            </div>
-            <span className="truncate text-sm font-medium text-foreground">{item.name}</span>
-          </button>
+            </button>
+            <EditableName
+              value={item.name}
+              onRename={(name) => rename(item, name)}
+              className="truncate text-sm font-medium text-foreground"
+              inputClassName="w-full truncate border-b border-border text-sm font-medium text-foreground"
+            />
+          </div>
         ))}
       </div>
     </div>

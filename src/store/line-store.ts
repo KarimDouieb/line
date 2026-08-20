@@ -11,7 +11,7 @@ import {
   type PointKind,
   type VesselSetName,
 } from "@/lib/line-math";
-import type { LineFileData } from "@/lib/line-file";
+import { serializeLineFile, type LineFileData } from "@/lib/line-file";
 
 export type { FamilyLayout } from "@/lib/line-math";
 export type CurveMode = "simple" | "advanced";
@@ -43,6 +43,9 @@ function densify(nodes: CurveNode[] | null): ControlPoint[] | null {
   return nodes ? densifyCurve(nodes, DENSIFY_RESOLUTION) : null;
 }
 
+/** The gallery entry currently open in the editor, if any — `snapshot` is the serialized state at last load/save, compared against live state to decide whether the "save" affordance shows. */
+export type OpenGallery = { id: string; name: string; snapshot: string };
+
 type LineStore = {
   /** The editable, sparse source of truth (anchors + tangent handles). */
   nodes: CurveNode[] | null;
@@ -55,6 +58,7 @@ type LineStore = {
   adapt: AdaptMode;
   familyVisible: boolean;
   curveMode: CurveMode;
+  openGallery: OpenGallery | null;
 
   /** Snapshot the current nodes onto the undo stack (call before a destructive edit). */
   snapshot: () => void;
@@ -65,6 +69,11 @@ type LineStore = {
   loadLineFile: (data: LineFileData) => void;
   clear: () => void;
   undo: () => void;
+
+  /** Marks a gallery entry as the one currently open — called after loading one, and again after saving over it. */
+  setOpenGallery: (open: OpenGallery) => void;
+  /** Detaches from whatever gallery entry was open, e.g. once the user starts a fresh line. */
+  clearOpenGallery: () => void;
 
   /** Move a single anchor, clamped so it can't cross its neighbors; renormalizes if an end moved. */
   moveNode: (i: number, next: ControlPoint) => void;
@@ -95,6 +104,7 @@ export const useLineStore = create<LineStore>((set, get) => ({
   adapt: "uniform",
   familyVisible: true,
   curveMode: "advanced",
+  openGallery: null,
 
   snapshot: () =>
     set((s) => {
@@ -117,6 +127,9 @@ export const useLineStore = create<LineStore>((set, get) => ({
 
   loadLineFile: (data) => {
     get().snapshot();
+    // A freshly imported/opened file isn't the gallery entry that may have
+    // been open before (if any is still relevant, the caller re-attaches it
+    // via setOpenGallery right after this — see GalleryPage/useGalleryUrlSync).
     set({
       nodes: data.nodes,
       controlPoints: densify(data.nodes),
@@ -124,12 +137,13 @@ export const useLineStore = create<LineStore>((set, get) => ({
       vesselSet: data.vesselSet,
       adapt: data.adapt,
       layout: data.layout,
+      openGallery: null,
     });
   },
 
   clear: () => {
     get().snapshot();
-    set({ nodes: null, controlPoints: null });
+    set({ nodes: null, controlPoints: null, openGallery: null });
   },
 
   undo: () =>
@@ -212,4 +226,20 @@ export const useLineStore = create<LineStore>((set, get) => ({
   setVesselSet: (s) => set({ vesselSet: s }),
   setAdapt: (a) => set({ adapt: a }),
   toggleFamilyVisible: () => set((s) => ({ familyVisible: !s.familyVisible })),
+
+  setOpenGallery: (open) => set({ openGallery: open }),
+  clearOpenGallery: () => set({ openGallery: null }),
 }));
+
+/** True once the live curve/height/vessel-set/adapt/layout has diverged from the open gallery entry's last-saved snapshot. */
+export function selectIsGalleryDirty(s: LineStore): boolean {
+  if (!s.openGallery || !s.nodes) return false;
+  const live = serializeLineFile({
+    nodes: s.nodes,
+    heightCm: s.heightCm,
+    vesselSet: s.vesselSet,
+    adapt: s.adapt,
+    layout: s.layout,
+  });
+  return live !== s.openGallery.snapshot;
+}

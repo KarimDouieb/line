@@ -1,7 +1,10 @@
 import { FamilySidebar } from "@/components/family/FamilySidebar";
 import { FamilyBoard } from "@/components/family/FamilyBoard";
+import { useGalleryUrlSync } from "@/hooks/use-gallery-url-sync";
 
 export function FamilyPage() {
+  useGalleryUrlSync();
+
   return (
     <div className="flex min-h-0 flex-1">
       <FamilySidebar />

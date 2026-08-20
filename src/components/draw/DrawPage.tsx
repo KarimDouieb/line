@@ -3,8 +3,11 @@ import { FamilyPeek } from "@/components/draw/FamilyPeek";
 import { ReferenceImageControls } from "@/components/draw/ReferenceImageControls";
 import { FamilyInviteButton } from "@/components/draw/FamilyInviteButton";
 import { CanvasActions } from "@/components/draw/CanvasActions";
+import { useGalleryUrlSync } from "@/hooks/use-gallery-url-sync";
 
 export function DrawPage() {
+  useGalleryUrlSync();
+
   return (
     <div className="relative min-h-0 flex-1">
       <InkCanvas />
