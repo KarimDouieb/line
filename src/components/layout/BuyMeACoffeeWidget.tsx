@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "@tanstack/react-router";
 
 const SCRIPT_SRC = "https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js";
-const VISIBLE_PATHS = new Set(["/about", "/export"]);
+const VISIBLE_PATHS = new Set(["/about", "/export", "/gallery"]);
 
 /**
  * The vendor script only builds its button inside a
