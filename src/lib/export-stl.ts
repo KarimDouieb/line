@@ -1,6 +1,6 @@
 /**
- * Printable turning ribs — one solid per vessel in the current family, all
- * laid out side by side in a single binary STL. Each rib's working edge
+ * Printable turning ribs — one solid per vessel in the current family, each
+ * its own binary STL bundled into a single zip download. Each rib's working edge
  * traces the vessel's own wall profile exactly (the same curve `export-pdf.ts`
  * draws flat on paper, swept into a real 3D tool instead): at every height,
  * the rib's cross-section is a rounded ellipse at least MIN_WIDTH_MM wide and
@@ -26,7 +26,6 @@ const BASE_WIDTH_MM = 80; // the foot flares out to this — a wide, flat base t
 const BASE_TAPER_MM = 55; // how much of the rib's height (measured up from the foot) the flare-out covers
 const MAX_THICKNESS_MM = 8;
 const RING_SEGMENTS = 16;
-const RIB_GAP_MM = 12; // spacing between ribs when laid out side by side
 
 const TEXT_HEIGHT_MM = 6;
 const TEXT_BUMP_MM = 0.6;
@@ -259,8 +258,26 @@ function rowRuns(img: Uint8ClampedArray, textW: number, py: number): [number, nu
  * share exact edge coordinates with its neighbors. `side` puts the text on
  * the rib's +Z face (1, the default) or mirrors it onto -Z (-1) — `pushBox`'s
  * `flip` is what keeps that mirrored copy's normals facing outward.
+ *
+ * The rib's cross-section is an ellipse in X-Z (see `ellipseRing`), so its
+ * surface height in Z falls off away from `centerX` — it is *not* flat at
+ * MAX_THICKNESS_MM/2 the way a single label-wide z0/z1 used to assume. A
+ * label wider than a few mm (most vessel names) then had its outer letters
+ * floating above the true surface with nothing underneath, touching the rib
+ * only right at its own horizontal center — exactly the disconnected boxes
+ * seen sitting on top of the rib instead of fused into it. `halfWidth` (the
+ * ellipse's local X half-width at this row) lets each box's z0 use the
+ * ellipse's own height at that box's own position instead of one constant,
+ * so every box sits flush against the curve it's actually resting on.
  */
-function buildRaisedText(label: string, centerX: number, topY: number, mmHeight: number, side: 1 | -1 = 1): Tri[] {
+function buildRaisedText(
+  label: string,
+  centerX: number,
+  topY: number,
+  mmHeight: number,
+  halfWidth: number,
+  side: 1 | -1 = 1,
+): Tri[] {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d")!;
   const fontPx = 22;
@@ -278,10 +295,22 @@ function buildRaisedText(label: string, centerX: number, topY: number, mmHeight:
   const img = ctx.getImageData(0, 0, textW, textH).data;
   const voxel = TEXT_HEIGHT_MM / textH;
   const realTextWidth = textW * voxel;
-  const zNear = MAX_THICKNESS_MM / 2 - 0.05; // slightly recessed into the rib's surface so the two solids fuse cleanly, not just touch at a point
-  const zFar = zNear + TEXT_BUMP_MM;
-  const z0 = side === 1 ? zNear : -zFar;
-  const z1 = side === 1 ? zFar : -zNear;
+
+  // The ellipse's real surface height in Z at horizontal offset `dx` from
+  // its own center — 0 once `dx` reaches (or exceeds) halfWidth, i.e. past
+  // the rib's own edge.
+  const ellipseZ = (dx: number) => {
+    const t = halfWidth > 0 ? Math.min(1, Math.abs(dx) / halfWidth) : 1;
+    return (MAX_THICKNESS_MM / 2) * Math.sqrt(Math.max(0, 1 - t * t));
+  };
+  // A box's near face has to clear the surface at *both* of its own X edges,
+  // not just its center — using the smaller (more falling-off) of the two
+  // guarantees the whole box sits on or below the true surface everywhere
+  // under it, so it's never even partially floating.
+  const zNearAt = (x0: number, x1: number) => {
+    const local = Math.min(ellipseZ(x0 - centerX), ellipseZ(x1 - centerX));
+    return Math.max(0.3, local - 0.05); // 0.3mm floor keeps a viable sliver even right at the rib's edge
+  };
 
   const originX = centerX - realTextWidth / 2;
   // Precomputed once and reused by index for every box: touching boxes need
@@ -319,6 +348,10 @@ function buildRaisedText(label: string, centerX: number, topY: number, mmHeight:
       // a second time — so it needs the *opposite* mapping from the front
       // face (unmirrored) to still read correctly right-side-round.
       const [x0, x1] = side === 1 ? [xEdges[textW - runEnd], xEdges[textW - runStart]] : [xEdges[runStart], xEdges[runEnd]];
+      const zNear = zNearAt(x0, x1);
+      const zFar = zNear + TEXT_BUMP_MM;
+      const z0 = side === 1 ? zNear : -zFar;
+      const z1 = side === 1 ? zFar : -zNear;
       pushBox(triangles, { x0, x1, y0: yEdges[py] + rowInset, y1: yEdges[py + 1] - rowInset, z0, z1 }, side === -1);
     }
   }
@@ -352,56 +385,79 @@ function trianglesToBinarySTL(triangles: Tri[]): ArrayBuffer {
   return buffer;
 }
 
+/** Filesystem/zip-entry-safe form of arbitrary text — lowercased, non-alphanumerics collapsed to single hyphens. */
+function slug(text: string): string {
+  return text.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+/** `YYYY-MM-DD_HH-mm-ss` in local time — sorts naturally and never collides within the same second. */
+function timestamp(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
+}
+
 /**
- * Triggers a binary-STL download: one printable rib per variant in the
- * current vessel set/adaptation, side by side. Returns false if there's
- * nothing to export.
+ * Triggers a download of one binary-STL file per variant in the current
+ * vessel set/adaptation, bundled together in a zip — each rib prints as its
+ * own separate object rather than sharing a plate layout, so slicer software
+ * can place and orient each one independently. The zip (and each rib inside
+ * it) is named after the line if it has one (the gallery entry currently
+ * open, if any — see OpenGalleryBar) plus a timestamp, so repeated exports
+ * of the same or different lines never collide or overwrite each other.
+ * JSZip is dynamically imported so it never loads for anyone who doesn't use
+ * this export (same reasoning as jsPDF in export-pdf.ts). Returns false if
+ * there's nothing to export.
  */
-export function downloadRibsStl(
+export async function downloadRibsStl(
   controlPoints: ControlPoint[] | null,
   heightCm: number,
   vesselSet: VesselSetName,
   adapt: AdaptMode,
-): boolean {
+  lineName?: string,
+): Promise<boolean> {
   if (!controlPoints || controlPoints.length < 2) return false;
 
   const mR = Math.max(0.2, maxRadius(controlPoints));
   const variants = resolveVariants(vesselSet, mR);
+  const baseName = slug(lineName ?? "") || "line";
+  const stamp = timestamp();
 
-  const all: Tri[] = [];
-  // Each rib's real X-extent varies — the profile's own radius change across
-  // its height, plus the base flare, can span well more than MIN_WIDTH_MM —
-  // so ribs are placed from that actual extent, not a fixed increment (which
-  // let wider ribs overlap the next one instead of sitting cleanly beside it).
-  let nextLeftEdge = 0;
+  const { default: JSZip } = await import("jszip");
+  const zip = new JSZip();
+
   for (const v of variants) {
     const rc = remapProfile(controlPoints, v.w, v.h, adapt);
     const mmHeight = heightCm * v.h * 10;
     const rib = buildRibMesh(rc, mmHeight);
 
-    const rimCenterX = profileXAt(rc, mmHeight, TEXT_ANCHOR_Y_MM) + MIN_WIDTH_MM / 2;
-    const label = buildRaisedText(v.label, rimCenterX, TEXT_ANCHOR_Y_MM, mmHeight);
+    const rimWidth = widthAt(TEXT_ANCHOR_Y_MM, mmHeight);
+    const rimCenterX = profileXAt(rc, mmHeight, TEXT_ANCHOR_Y_MM) + rimWidth / 2;
+    const label = buildRaisedText(v.label, rimCenterX, TEXT_ANCHOR_Y_MM, mmHeight, rimWidth / 2);
 
     // The vertical mark's distance label sits on the ridge itself, past its
     // ease-in rise so the ridge is at full width there, centered in the
     // (wider, flared) base at that height — and on both faces, so it reads
     // no matter which side of the rib is up.
     const markTextY = Math.min(rib.markStartY + MARK_EASE_MM + 3, mmHeight - 1);
-    const markCenterX = profileXAt(rc, mmHeight, markTextY) + (widthAt(markTextY, mmHeight) + MARK_WIDTH_BUMP) / 2;
+    const markWidth = widthAt(markTextY, mmHeight) + MARK_WIDTH_BUMP;
+    const markCenterX = profileXAt(rc, mmHeight, markTextY) + markWidth / 2;
     const markLabel = `${Math.round(rib.footRadius)}mm`;
-    const markTextTop = buildRaisedText(markLabel, markCenterX, markTextY, mmHeight, 1);
-    const markTextBottom = buildRaisedText(markLabel, markCenterX, markTextY, mmHeight, -1);
+    const markTextTop = buildRaisedText(markLabel, markCenterX, markTextY, mmHeight, markWidth / 2, 1);
+    const markTextBottom = buildRaisedText(markLabel, markCenterX, markTextY, mmHeight, markWidth / 2, -1);
 
-    const dx = nextLeftEdge - rib.minX;
-    all.push(...translate([...rib.triangles, ...label, ...markTextTop, ...markTextBottom], dx));
-    nextLeftEdge += rib.maxX - rib.minX + RIB_GAP_MM;
+    // Shifted so the rib starts at x=0 in its own file, rather than at
+    // whatever offset it would have needed to sit beside other ribs.
+    const dx = -rib.minX;
+    const triangles = translate([...rib.triangles, ...label, ...markTextTop, ...markTextBottom], dx);
+    zip.file(`${slug(v.label) || "rib"}.stl`, trianglesToBinarySTL(triangles));
   }
 
-  const buffer = trianglesToBinarySTL(all);
-  const url = URL.createObjectURL(new Blob([buffer], { type: "model/stl" }));
+  const blob = await zip.generateAsync({ type: "blob" });
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `line-${vesselSet}-ribs.stl`;
+  a.download = `${baseName}-${stamp}.zip`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 4000);
   return true;

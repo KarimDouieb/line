@@ -12,6 +12,7 @@ export function ExportPage() {
   const heightCm = useLineStore((s) => s.heightCm);
   const vesselSet = useLineStore((s) => s.vesselSet);
   const adapt = useLineStore((s) => s.adapt);
+  const lineName = useLineStore((s) => s.openGallery?.name);
 
   return (
     <div className="mx-auto mt-14 max-w-xl px-5">
@@ -48,9 +49,9 @@ export function ExportPage() {
         title="Turning ribs · 3D print"
         description="one rib per shape, STL, ready to print"
         status="active"
-        onAction={() => {
-          const ok = downloadRibsStl(controlPoints, heightCm, vesselSet, adapt);
-          toast(ok ? "STL saved — one rib per shape" : "draw a line first");
+        onAction={async () => {
+          const ok = await downloadRibsStl(controlPoints, heightCm, vesselSet, adapt, lineName);
+          toast(ok ? "STL saved — one rib per shape, zipped" : "draw a line first");
         }}
       />
     </div>
