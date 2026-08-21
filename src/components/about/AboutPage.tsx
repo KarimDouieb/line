@@ -30,10 +30,12 @@ export function AboutPage() {
         <p className="text-foreground">Find the line. The rest is proportion.</p>
       </div>
 
-      <div className="my-14 h-px w-full bg-[repeating-linear-gradient(90deg,rgba(60,50,35,.28)_0,rgba(60,50,35,.28)_1px,transparent_1px,transparent_8px)]" />
+      <div className="my-14 h-px w-full bg-[repeating-linear-gradient(90deg,rgba(60,50,35,.8)_0,rgba(60,50,35,.8)_1px,transparent_1px,transparent_8px)]" />
 
       <div className="font-sans">
-        <h2 className="mb-3 font-serif text-lg text-foreground">Karim Douieb</h2>
+        <h2 className="mb-3 font-serif text-lg text-foreground">
+          Karim Douieb <span className="text-sm font-normal text-foreground/50">(the author of Line)</span>
+        </h2>
         <p className="max-w-[46ch] text-[13.5px] leading-relaxed text-foreground/70">
           Data scientist, coder, and co-founder of{" "}
           <a
